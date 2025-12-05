@@ -8,7 +8,8 @@ import { processTextMessage } from "@/lib/backend/chatService";
 // TODO: Add medical safety checks and disclaimers
 // TODO: Log conversations for quality improvement (with privacy considerations)
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+// Ensure BACKEND_URL doesn't have trailing slash to avoid double slashes
+const BACKEND_URL = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000").replace(/\/$/, "");
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,10 +23,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`Forwarding request to backend: ${BACKEND_URL}/api/chat/text`);
+    const backendEndpoint = `${BACKEND_URL}/api/chat/text`;
+    console.log(`Forwarding request to backend: ${backendEndpoint}`);
 
     // Forward request to Python backend
-    const response = await fetch(`${BACKEND_URL}/api/chat/text`, {
+    const response = await fetch(backendEndpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

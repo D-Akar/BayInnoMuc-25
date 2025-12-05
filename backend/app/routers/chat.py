@@ -34,6 +34,8 @@ class TextChatResponse(BaseModel):
     suggestions: List[str]
     session_id: str
     model_used: Optional[str] = None  # Show which model was used
+    
+    model_config = {"protected_namespaces": ()}  # Allow model_ prefix to avoid warning
 
 
 @router.post("/text", response_model=TextChatResponse)
