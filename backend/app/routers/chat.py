@@ -10,8 +10,6 @@ import base64
 
 from app.services.chat_service import (
     process_text_message,
-    get_available_models,
-    get_primary_model
 )
 from app.services import voice_service
 
@@ -64,15 +62,15 @@ async def text_chat(request: TextChatRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/models")
-async def list_models():
-    """
-    Get list of available LLM models and current primary model.
-    """
-    return {
-        "primary_model": get_primary_model(),
-        "available_models": get_available_models(),
-    }
+# @router.get("/models")
+# async def list_models():
+#     """
+#     Get list of available LLM models and current primary model.
+#     """
+#     return {
+#         "primary_model": get_primary_model(),
+#         "available_models": get_available_models(),
+#     }
 
 
 @router.post("/voice/transcribe")

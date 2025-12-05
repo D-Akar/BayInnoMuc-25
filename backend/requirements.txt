@@ -2,11 +2,12 @@ fastapi==0.115.0
 uvicorn[standard]==0.30.6
 python-multipart==0.0.9
 pydantic==2.9.0
-openai>=1.0.0
 python-dotenv>=1.0.0
+azure-ai-projects>=1.0.0
+azure-identity>=1.15.0
 
 # TODO: Add dependencies for future integrations:
-# openai>=1.0.0  # For GPT-4 integration
+# openai>=1.0.0  # For GPT-4 integration (replaced by Azure AI Agent)
 # anthropic>=0.18.0  # For Claude integration
 # whisper  # For speech-to-text
 # elevenlabs  # For text-to-speech

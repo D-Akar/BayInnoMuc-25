@@ -1,122 +1,99 @@
 """
-Chat Service - LLM integration for text chat using Azure OpenAI
+Chat Service - LLM integration for text chat using Azure AI Agent
 """
 
 import os
-from typing import List, Dict, Any, Optional
-from openai import OpenAI
 import traceback
+import time
+from typing import List, Dict, Any, Optional
+from azure.ai.projects import AIProjectClient
+from azure.identity import DefaultAzureCredential
 
-# Load Azure API key from environment
-azure_api_key = os.environ.get("API_KEY")
+# --- Configuration ---
+azure_agent_id = os.environ.get("AZURE_ASSISTANT_ID")
+project_endpoint = "https://safetalkfinal.services.ai.azure.com/api/projects/SafeTalkFinal"
 
-if not azure_api_key:
-    raise ValueError("API_KEY environment variable is not set")
+if not azure_agent_id:
+    raise ValueError("AZURE_ASSISTANT_ID environment variable is not set")
 
-# Initialize Azure OpenAI client
-client = OpenAI(
-    api_key=azure_api_key,
-    base_url="https://SafeTalkFinal.openai.azure.com/openai/v1/"
+# Initialize Client
+client = AIProjectClient(
+    endpoint=project_endpoint,
+    credential=DefaultAzureCredential()
 )
 
-# Available models configuration for Azure OpenAI
-AVAILABLE_MODELS = [
-    {
-        "name": "gpt-4.1-nano",
-        "description": "GPT-4.1 Nano on Azure - Fast and efficient",
-        "max_tokens": 4096,
-        "temperature": 1.0,  # GPT-4.1 Nano only supports temperature=1.0
-    },
-]
+AGENT_ID = azure_agent_id
 
-# Primary model to use
-PRIMARY_MODEL = os.getenv("AZURE_MODEL", AVAILABLE_MODELS[0]["name"])
-
-# System prompt for HIV care assistant
-SYSTEM_PROMPT = """You are a compassionate and knowledgeable HIV care assistant. Your role is to:
-
-1. Provide supportive, non-judgmental information about HIV testing, treatment, prevention, and living with HIV
-2. Offer empathetic and understanding responses to users' concerns
-3. Encourage users to seek professional medical advice when appropriate
-4. Respect privacy and maintain confidentiality
-5. Provide accurate, evidence-based information
-6. Focus on emotional support and connecting users to resources
-
-Important guidelines:
-- Always remind users that this is not a substitute for professional medical advice
-- Never diagnose conditions or prescribe treatments
-- Be sensitive to the emotional aspects of HIV-related concerns
-- Use inclusive, non-stigmatizing language
-- Encourage regular medical check-ups and adherence to treatment plans
-- Respect cultural and personal differences
-
-Keep your repsonses brief. If you have a lot of information to pass on, do that over multiple messages"""
-
-
-def get_model_config(model_name: str) -> Optional[Dict[str, Any]]:
-    """Get configuration for a specific model"""
-    for model in AVAILABLE_MODELS:
-        if model["name"] == model_name:
-            return model
-    return None
-
-
-def call_llm_with_fallback(
-    messages: List[Dict[str, str]],
-    preferred_model: Optional[str] = None
-) -> tuple[str, str]:
+def call_llm_with_history(messages: List[Dict[str, str]]) -> str:
     """
-    Call Azure OpenAI API.
-    
-    Args:
-        messages: List of conversation messages
-        preferred_model: Optional specific model to try first
-        
-    Returns:
-        Tuple of (response_text, model_used)
+    Optimized: Reduced context window & Adaptive polling for lower latency.
     """
-    # Use preferred model or primary model
-    model_name = preferred_model if preferred_model else PRIMARY_MODEL
-    model_config = get_model_config(model_name)
-    
-    if not model_config:
-        model_name = PRIMARY_MODEL
-        model_config = AVAILABLE_MODELS[0]
-    
+    thread = None
     try:
-        print(f"🔄 Using Azure OpenAI model: {model_name}")
-        print(f"📤 Sending {len(messages)} messages to API")
-        
-        completion = client.chat.completions.create(
-            model=model_name,
-            messages=messages,
-            temperature=model_config["temperature"],
-            max_completion_tokens=min(800, model_config["max_tokens"]),
+        # 1. OPTIMIZATION: One Single API Call
+        run = client.agents.create_thread_and_run(
+            agent_id=AGENT_ID,
+            thread={
+                "messages": messages
+            }
         )
         
-        print(f"📥 Received completion object: {completion}")
-        print(f"📊 Choices count: {len(completion.choices)}")
+        thread_id = run.thread_id
         
-        if completion.choices and len(completion.choices) > 0:
-            response_text = completion.choices[0].message.content
-            print(f"📝 Response content length: {len(response_text) if response_text else 0}")
-            print(f"📝 Response preview: {response_text[:200] if response_text else 'EMPTY OR NULL'}")
-        else:
-            print(f"⚠️ No choices returned from API")
-            response_text = ""
+        # 2. OPTIMIZATION: Adaptive Polling
+        # Check frequently at first (0.1s), then back off. 
+        # This catches short answers much faster.
+        poll_count = 0
+        while run.status in ["queued", "in_progress", "requires_action"]:
+            # Sleep shorter for the first 2 seconds (20 checks), then 0.5s
+            sleep_time = 0.1 if poll_count < 20 else 0.5
+            time.sleep(sleep_time)
+            
+            run = client.agents.runs.get(thread_id=thread_id, run_id=run.id)
+            poll_count += 1
+            
+        if run.status != "completed":
+            raise Exception(f"Agent run failed with status: {run.status}")
         
-        if not response_text:
-            raise Exception("Empty response received from Azure OpenAI API")
+        # 3. Retrieve Response
+        response_pager = client.agents.messages.list(
+            thread_id=thread_id,
+            order="desc", 
+            limit=1
+        )
         
-        print(f"✅ Success with model: {model_name}")
+        messages_list = list(response_pager)
+        response_text = ""
         
-        return response_text, model_name
-        
-    except Exception as e:
-        print(f"❌ Failed with {model_name}: {str(e)}")
-        traceback.print_exc()
-        raise Exception(f"Azure OpenAI API call failed: {str(e)}")
+        if messages_list:
+            last_msg = messages_list[0]
+            if last_msg.role == "assistant":
+                for content_part in last_msg.content:
+                    if hasattr(content_part, 'text'):
+                         response_text += content_part.text.value
+                    elif isinstance(content_part, dict) and 'text' in content_part:
+                         response_text += content_part['text']['value']
 
+        if not response_text:
+            raise Exception("Empty response from Agent")
+            
+        # Store thread object for cleanup
+        thread = type('obj', (object,), {'id': thread_id})
+            
+        return response_text
+
+    except Exception as e:
+        print(f"❌ Azure Agent Error: {str(e)}")
+        traceback.print_exc()
+        raise e
+    
+    finally:
+        # 4. Cleanup
+        if thread:
+            try:
+                client.agents.threads.delete(thread.id)
+            except Exception:
+                pass
 
 def process_text_message(
     message: str,
@@ -124,153 +101,152 @@ def process_text_message(
     conversation_history: Optional[List[Dict[str, Any]]] = None,
     preferred_model: Optional[str] = None,
 ) -> Dict[str, Any]:
-    """
-    Process a user message and generate a response using LLM with fallback support.
-    
-    Args:
-        message: User's message
-        session_id: Unique session identifier
-        conversation_history: Previous conversation messages
-        preferred_model: Optional specific model to use
-        
-    Returns:
-        Dictionary containing response, suggestions, and metadata
-    """
-    
+    """Process message and return response dict."""
     try:
-        print(f"\n{'='*50}")
-        print(f"Processing message")
-        print(f"Session ID: {session_id}")
-        print(f"Message: {message}")
-        print(f"History length: {len(conversation_history) if conversation_history else 0}")
-        print(f"{'='*50}\n")
+        formatted_messages = []
         
-        # Build conversation context
-        messages = [
-            {
-                "role": "system",
-                "content": SYSTEM_PROMPT
-            }
-        ]
-        
-        # Add conversation history if available
+        # OPTIMIZATION: Limit history to last 6 messages
+        # Processing 6 messages is significantly faster than 10.
         if conversation_history:
-            for msg in conversation_history[-10:]:  # Keep last 10 messages for context
-                if msg.get("role") in ["user", "assistant"]:
-                    messages.append({
-                        "role": msg["role"],
-                        "content": msg["content"]
-                    })
+            for msg in conversation_history[-6:]:
+                role = msg.get("role")
+                content = msg.get("content")
+                if role in ["user", "assistant"] and content:
+                    formatted_messages.append({"role": role, "content": content})
         
-        # Add current user message
-        messages.append({
-            "role": "user",
-            "content": message
-        })
+        formatted_messages.append({"role": "user", "content": message})
 
-        # Call LLM with fallback support
-        assistant_message, model_used = call_llm_with_fallback(
-            messages=messages,
-            preferred_model=preferred_model
-        )
-
-        print(f"\n📝 Response preview: {assistant_message[:100]}...\n")
-
-        # Generate follow-up suggestions
-        suggestions = generate_suggestions(message, assistant_message)
+        # Call LLM
+        response_text = call_llm_with_history(formatted_messages)
+        
+        # Suggestions (Local processing is instant)
+        suggestions = generate_suggestions(message, response_text)
 
         return {
-            "response": assistant_message,
+            "response": response_text,
             "suggestions": suggestions,
             "session_id": session_id,
-            "model_used": model_used,  # Include which model was used
+            "model_used": "azure-agent",
         }
 
     except Exception as e:
-        print(f"\n{'!'*50}")
-        print(f"LLM API ERROR")
-        print(f"Error type: {type(e).__name__}")
-        print(f"Error message: {str(e)}")
-        print(f"{'!'*50}\n")
-        traceback.print_exc()
-        
         return {
-            "response": "I apologize, but I'm having trouble processing your request right now. Please try again in a moment, or feel free to browse our FAQ section for immediate answers.",
-            "suggestions": [
-                "Browse FAQs",
-                "Try asking again",
-                "Contact support"
-            ],
+            "response": "I apologize, but I'm having trouble connecting right now.",
+            "suggestions": ["Try again"],
             "session_id": session_id,
             "error": str(e)
         }
 
-
 def generate_suggestions(user_message: str, assistant_response: str) -> List[str]:
     """
-    Generate contextual follow-up suggestions based on the conversation.
-    
-    Args:
-        user_message: The user's original message
-        assistant_response: The assistant's response
-        
-    Returns:
-        List of suggestion strings
+    Generate intelligent, context-aware follow-up suggestions based on both
+    the user's question and the agent's response.
     """
-    # Default suggestions
-    default_suggestions = [
-        "Tell me more",
-        "What are my next steps?",
-        "Where can I get help?",
-    ]
+    user_lower = user_message.lower()
+    response_lower = assistant_response.lower()
     
-    # Keyword-based contextual suggestions
-    lower_message = user_message.lower()
+    # Combine both for better context
+    combined_text = user_lower + " " + response_lower
     
-    suggestions = []
+    # Testing & Diagnosis
+    if any(word in combined_text for word in ["test", "testing", "diagnosis", "hiv test", "window period"]):
+        if "where" in user_lower or "location" in combined_text:
+            return ["What types of tests exist?", "How accurate are tests?", "What if I test positive?"]
+        elif "positive" in combined_text or "result" in combined_text:
+            return ["What happens next?", "Treatment options?", "Who should I tell?"]
+        elif "window" in combined_text or "when" in user_lower:
+            return ["Where to get tested?", "What happens during testing?", "Cost of testing?"]
+        else:
+            return ["Where can I get tested?", "When should I test?", "Test accuracy rates?"]
     
-    # Testing-related suggestions
-    if any(word in lower_message for word in ["test", "testing", "tested"]):
-        suggestions = [
-            "Where can I get tested?",
-            "How accurate are HIV tests?",
-            "What happens after testing?",
-        ]
-    # Treatment-related suggestions
-    elif any(word in lower_message for word in ["treatment", "medication", "drugs", "therapy"]):
-        suggestions = [
-            "What are the side effects?",
-            "How long is treatment?",
-            "Is treatment effective?",
-        ]
-    # Prevention-related suggestions
-    elif any(word in lower_message for word in ["prevent", "prevention", "prep", "pep"]):
-        suggestions = [
-            "What is PrEP?",
-            "What is PEP?",
-            "How effective is prevention?",
-        ]
-    # Living with HIV suggestions
-    elif any(word in lower_message for word in ["living", "life", "daily", "cope"]):
-        suggestions = [
-            "How can I stay healthy?",
-            "Who should I tell?",
-            "Where can I find support?",
-        ]
-    else:
-        suggestions = default_suggestions
+    # Treatment & Medication
+    elif any(word in combined_text for word in ["treatment", "medication", "art", "antiretroviral", "drugs", "pills", "medicine"]):
+        if "side effect" in combined_text or "problem" in combined_text:
+            return ["How to manage side effects?", "Alternative treatments?", "When to see a doctor?"]
+        elif "start" in combined_text or "begin" in combined_text:
+            return ["What to expect from treatment?", "Treatment side effects?", "Cost of medication?"]
+        elif "stop" in combined_text or "miss" in combined_text or "adhere" in combined_text:
+            return ["Importance of adherence?", "What if I miss doses?", "Reminder strategies?"]
+        else:
+            return ["How does treatment work?", "Treatment side effects?", "How long is treatment?"]
     
-    return suggestions
-
-
-def get_available_models() -> List[Dict[str, Any]]:
-    """
-    Get list of available models with their configurations.
-    Useful for admin/debugging endpoints.
-    """
-    return AVAILABLE_MODELS
-
-
-def get_primary_model() -> str:
-    """Get the current primary model name"""
-    return PRIMARY_MODEL
+    # Prevention (PrEP/PEP)
+    elif any(word in combined_text for word in ["prevent", "prevention", "prep", "pep", "prophylaxis", "protect"]):
+        if "prep" in combined_text:
+            return ["How to get PrEP?", "PrEP side effects?", "PrEP effectiveness?"]
+        elif "pep" in combined_text:
+            return ["Where to get PEP?", "PEP timeline?", "PEP vs PrEP?"]
+        elif "condom" in combined_text:
+            return ["Other prevention methods?", "What is PrEP?", "Risk reduction strategies?"]
+        else:
+            return ["What is PrEP?", "What is PEP?", "How to reduce risk?"]
+    
+    # Living with HIV
+    elif any(word in combined_text for word in ["living with", "daily life", "lifestyle", "cope", "coping", "manage", "undetectable"]):
+        if "work" in combined_text or "job" in combined_text:
+            return ["Disclosure at work?", "Staying healthy?", "Support groups?"]
+        elif "relation" in combined_text or "partner" in combined_text or "sex" in combined_text:
+            return ["Telling partners?", "Safe sex practices?", "Undetectable = Untransmittable?"]
+        elif "u=u" in combined_text or "undetectable" in combined_text:
+            return ["How to become undetectable?", "What does U=U mean?", "Can I have children?"]
+        else:
+            return ["Staying healthy tips?", "Support resources?", "Emotional support?"]
+    
+    # Transmission & Risk
+    elif any(word in combined_text for word in ["transmit", "transmission", "risk", "expose", "exposure", "infect", "catch", "spread"]):
+        if "how" in user_lower:
+            return ["Risk levels?", "Prevention methods?", "Getting tested?"]
+        elif "partner" in combined_text:
+            return ["How to tell partner?", "Protecting partners?", "U=U explained?"]
+        else:
+            return ["Transmission risks?", "Prevention strategies?", "PrEP for partners?"]
+    
+    # Symptoms & Health
+    elif any(word in combined_text for word in ["symptom", "sick", "fever", "rash", "tired", "fatigue", "health"]):
+        if "early" in combined_text or "first" in combined_text:
+            return ["When to get tested?", "Acute HIV symptoms?", "Next steps?"]
+        else:
+            return ["When to see a doctor?", "Managing symptoms?", "Health monitoring?"]
+    
+    # Support & Resources
+    elif any(word in combined_text for word in ["support", "help", "resource", "counsel", "talk", "alone", "scared", "anxiety"]):
+        if "emotion" in combined_text or "mental" in combined_text or "depress" in combined_text:
+            return ["Mental health resources?", "Support groups?", "Counseling services?"]
+        elif "financial" in combined_text or "cost" in combined_text or "afford" in combined_text:
+            return ["Financial assistance?", "Insurance coverage?", "Free services?"]
+        else:
+            return ["Support groups near me?", "Hotline numbers?", "Online communities?"]
+    
+    # Pregnancy & Family
+    elif any(word in combined_text for word in ["pregnant", "pregnancy", "baby", "child", "mother", "breastfeed"]):
+        return ["Prevention during pregnancy?", "Safe delivery options?", "Infant testing?"]
+    
+    # Stigma & Disclosure
+    elif any(word in combined_text for word in ["stigma", "discriminat", "tell", "disclose", "secret", "shame"]):
+        return ["Disclosure strategies?", "Legal protections?", "Finding support?"]
+    
+    # Response-based suggestions when agent mentions specific topics
+    elif "doctor" in response_lower or "healthcare" in response_lower or "medical" in response_lower:
+        return ["How to find a specialist?", "What to ask my doctor?", "Preparing for appointments?"]
+    elif "immediately" in response_lower or "urgent" in response_lower or "soon" in response_lower:
+        return ["Where to get immediate help?", "Emergency resources?", "What to do now?"]
+    elif "more information" in response_lower or "learn more" in response_lower:
+        return ["Tell me more", "Related topics?", "Where to read more?"]
+    
+    # Default contextual suggestions based on question type
+    elif "?" in user_message:
+        if "how" in user_lower:
+            return ["Tell me more", "Next steps?", "Where to get help?"]
+        elif "what" in user_lower:
+            return ["How does it work?", "Why is this important?", "Related information?"]
+        elif "where" in user_lower:
+            return ["Other options?", "What to expect?", "Cost information?"]
+        elif "when" in user_lower:
+            return ["What happens next?", "How long does it take?", "Other timing questions?"]
+        elif "why" in user_lower:
+            return ["Tell me more", "What are alternatives?", "Related concerns?"]
+        else:
+            return ["Tell me more", "Related topics?", "Where to get help?"]
+    
+    # Final fallback
+    return ["Tell me more", "What are my options?", "Where can I get help?"]
