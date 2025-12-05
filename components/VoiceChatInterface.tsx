@@ -1,365 +1,400 @@
-"use client";
+'use client';
 
-import { useState, useRef, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Mic, MicOff, Volume2, VolumeX, ArrowLeft, X, Loader2 } from "lucide-react";
-import Link from "next/link";
-import Layout from "@/components/Layout";
-import { API_ENDPOINTS } from "@/lib/config";
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  LiveKitRoom, 
+  RoomAudioRenderer, 
+  useVoiceAssistant, 
+  BarVisualizer,
+  TrackReferenceOrPlaceholder,
+  useTranscriptions
+} from '@livekit/components-react';
+import { 
+  Mic, 
+  Activity, 
+  Shield, 
+  FileText, 
+  Phone, 
+  PhoneOff, 
+  MessageSquare, 
+  BookOpen,
+  Stethoscope,
+  Pill,
+  TestTube
+} from 'lucide-react';
 
-interface Transcription {
-  text: string;
-  role: "user" | "assistant";
+interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
   timestamp: Date;
 }
 
 export default function VoiceChatInterface() {
-  const [isRecording, setIsRecording] = useState(false);
-  const [isListening, setIsListening] = useState(false);
-  const [transcriptions, setTranscriptions] = useState<Transcription[]>([]);
-  const [sessionId, setSessionId] = useState<string | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [volume, setVolume] = useState(0);
-  const [isMuted, setIsMuted] = useState(false);
+  const [token, setToken] = useState('');
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [roomName] = useState('hiv-assistant-' + Math.random(). toString(36).substring(7));
 
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const analyserRef = useRef<AnalyserNode | null>(null);
-  const animationFrameRef = useRef<number | null>(null);
-
-  // Initialize session
-  useEffect(() => {
-    async function initSession() {
-      try {
-        const response = await fetch(API_ENDPOINTS.session, { method: "POST" });
-        const data = await response.json();
-        setSessionId(data.sessionId);
-      } catch (error) {
-        console.error("Failed to initialize session:", error);
-      }
-    }
-    initSession();
-  }, []);
-
-  // Volume visualization
-  useEffect(() => {
-    if (isRecording && audioContextRef.current && analyserRef.current) {
-      const updateVolume = () => {
-        if (!analyserRef.current) return;
-
-        const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
-        analyserRef.current.getByteFrequencyData(dataArray);
-        const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
-        setVolume(average);
-
-        if (isRecording) {
-          animationFrameRef.current = requestAnimationFrame(updateVolume);
-        }
-      };
-      updateVolume();
-    } else {
-      setVolume(0);
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    }
-
-    return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, [isRecording]);
-
-  const startRecording = async () => {
+  const connectToRoom = async () => {
+    setIsConnecting(true);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const response = await fetch(`/api/token?room=${roomName}&username=patient-${Date.now()}`);
       
-      // Set up audio context for volume visualization
-      audioContextRef.current = new AudioContext();
-      const source = audioContextRef.current.createMediaStreamSource(stream);
-      analyserRef.current = audioContextRef.current.createAnalyser();
-      analyserRef.current.fftSize = 256;
-      source.connect(analyserRef.current);
-
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
-
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
-      };
-
-      mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-        await processAudio(audioBlob);
-        
-        // Clean up
-        stream.getTracks().forEach((track) => track.stop());
-        if (audioContextRef.current) {
-          audioContextRef.current.close();
-        }
-      };
-
-      mediaRecorder.start();
-      setIsRecording(true);
-      setIsListening(true);
-    } catch (error) {
-      console.error("Error starting recording:", error);
-      alert(
-        "Unable to access microphone. Please check your permissions and try again."
-      );
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-      setIsListening(false);
-    }
-  };
-
-  const processAudio = async (audioBlob: Blob) => {
-    if (!sessionId) return;
-
-    setIsProcessing(true);
-
-    try {
-      // Transcribe audio
-      const formData = new FormData();
-      formData.append("audio", audioBlob, "recording.webm");
-      formData.append("sessionId", sessionId);
-
-      const transcribeResponse = await fetch(API_ENDPOINTS.chatVoiceTranscribe, {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!transcribeResponse.ok) {
-        throw new Error("Transcription failed");
+      if (!response.ok) {
+        throw new Error('Failed to get token');
       }
-
-      const { transcription } = await transcribeResponse.json();
-
-      // Add user transcription
-      setTranscriptions((prev) => [
-        ...prev,
-        {
-          text: transcription,
-          role: "user",
-          timestamp: new Date(),
-        },
-      ]);
-
-      // TODO: Process transcription through chat service and get response
-      // For now, use a placeholder response
-      const responseText =
-        "Thank you for your message. I'm here to provide you with compassionate support and information about HIV care. How can I help you today?";
-
-      // Add assistant transcription
-      setTranscriptions((prev) => [
-        ...prev,
-        {
-          text: responseText,
-          role: "assistant",
-          timestamp: new Date(),
-        },
-      ]);
-
-      // TODO: Synthesize response to speech and play it
-      // const synthesizeResponse = await fetch(API_ENDPOINTS.chatVoiceSynthesize, {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify({ text: responseText, sessionId }),
-      // });
-      // const audioBlob = await synthesizeResponse.blob();
-      // const audio = new Audio(URL.createObjectURL(audioBlob));
-      // if (!isMuted) {
-      //   audio.play();
-      // }
+      
+      const data = await response.json();
+      setToken(data.token);
     } catch (error) {
-      console.error("Error processing audio:", error);
-      setTranscriptions((prev) => [
-        ...prev,
-        {
-          text:
-            "I'm sorry, I'm having trouble processing your audio. Please try again.",
-          role: "assistant",
-          timestamp: new Date(),
-        },
-      ]);
-    } finally {
-      setIsProcessing(false);
+      console.error('Failed to get token:', error);
+      alert('Failed to connect. Please check your environment variables and try again.');
+      setIsConnecting(false);
     }
+  };
+
+  const disconnect = () => {
+    setToken('');
+    setIsConnecting(false);
   };
 
   return (
-    <Layout>
-      <div className="min-h-screen bg-neutral-50">
-        <div className="container mx-auto px-4 py-6 max-w-4xl">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <Link href="/">
-              <Button variant="ghost" size="sm">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Home
-              </Button>
-            </Link>
-            <div className="flex gap-2">
-              <Link href="/chat/text">
-                <Button variant="ghost" size="sm">
-                  Switch to Text
-                </Button>
-              </Link>
-              <Link href="/">
-                <Button variant="ghost" size="sm">
-                  <X className="h-4 w-4 mr-2" />
-                  End Conversation
-                </Button>
-              </Link>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4">
+      <div className="max-w-6xl w-full">
+        {!token ? (
+          <LandingScreen onConnect={connectToRoom} isConnecting={isConnecting} />
+        ) : (
+          <LiveKitRoom
+            token={token}
+            serverUrl={process.env.NEXT_PUBLIC_LIVEKIT_URL}
+            connect={true}
+            audio={true}
+            video={false}
+            onDisconnected={disconnect}
+          >
+            <VoiceChat onDisconnect={disconnect} />
+            <RoomAudioRenderer />
+          </LiveKitRoom>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function LandingScreen({ onConnect, isConnecting }: { onConnect: () => void; isConnecting: boolean }) {
+  return (
+    <div className="bg-white rounded-3xl shadow-2xl p-8 md:p-12 max-w-2xl mx-auto">
+      <div className="text-center mb-8">
+        <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full mx-auto flex items-center justify-center mb-6 shadow-lg">
+          <Stethoscope className="w-12 h-12 text-white" />
+        </div>
+        <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-3">
+          HIV Knowledge Assistant
+        </h1>
+        <p className="text-gray-600 text-lg">Expert AI guidance on HIV prevention, treatment & care</p>
+      </div>
+
+      <div className="mb-8 space-y-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-6">
+        <h3 className="font-semibold text-gray-900 mb-4 text-lg">I can help you with:</h3>
+        <div className="space-y-4">
+          <div className="flex items-start gap-4">
+            <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <Shield className="w-5 h-5 text-blue-500" />
+            </div>
+            <div>
+              <h4 className="font-medium text-gray-900">Prevention & Risk Reduction</h4>
+              <p className="text-sm text-gray-600">PrEP, PEP, safe practices, and prevention strategies</p>
             </div>
           </div>
-
-          {/* Main Chat Container */}
-          <div className="bg-white rounded-2xl shadow-lg border border-neutral-200 flex flex-col h-[calc(100vh-12rem)]">
-            {/* Transcriptions Area */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
-              {transcriptions.length === 0 && (
-                <div className="text-center py-12">
-                  <p className="text-neutral-600 text-lg mb-2">
-                    Click the microphone to start talking
-                  </p>
-                  <p className="text-sm text-neutral-500">
-                    Your conversation is private and confidential
-                  </p>
-                </div>
-              )}
-              {transcriptions.map((transcription, index) => (
-                <div
-                  key={index}
-                  className={`flex ${
-                    transcription.role === "user" ? "justify-end" : "justify-start"
-                  }`}
-                >
-                  <div
-                    className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                      transcription.role === "user"
-                        ? "bg-primary-500 text-white"
-                        : "bg-neutral-100 text-neutral-900"
-                    }`}
-                  >
-                    <p className="text-base leading-relaxed">
-                      {transcription.text}
-                    </p>
-                    <p
-                      className={`text-xs mt-2 ${
-                        transcription.role === "user"
-                          ? "text-primary-100"
-                          : "text-neutral-500"
-                      }`}
-                    >
-                      {transcription.timestamp.toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </p>
-                  </div>
-                </div>
-              ))}
-              {isProcessing && (
-                <div className="flex justify-start">
-                  <div className="bg-neutral-100 rounded-2xl px-4 py-3">
-                    <Loader2 className="h-5 w-5 animate-spin text-neutral-500" />
-                  </div>
-                </div>
-              )}
+          <div className="flex items-start gap-4">
+            <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <Pill className="w-5 h-5 text-green-500" />
             </div>
-
-            {/* Voice Controls */}
-            <div className="border-t border-neutral-200 p-8">
-              <div className="flex flex-col items-center gap-6">
-                {/* Audio Wave Visualization */}
-                <div className="w-full max-w-md">
-                  <div className="flex items-center justify-center gap-1 h-16">
-                    {Array.from({ length: 20 }).map((_, i) => {
-                      const barHeight =
-                        isRecording && volume > 0
-                          ? Math.max(4, (volume / 255) * 60 + Math.random() * 20)
-                          : 4;
-                      return (
-                        <div
-                          key={i}
-                          className="bg-primary-500 rounded-full transition-all duration-100"
-                          style={{
-                            width: "4px",
-                            height: `${barHeight}px`,
-                            opacity: isRecording ? 1 : 0.3,
-                          }}
-                        />
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Control Buttons */}
-                <div className="flex items-center gap-4">
-                  <Button
-                    variant="ghost"
-                    size="lg"
-                    onClick={() => setIsMuted(!isMuted)}
-                    aria-label={isMuted ? "Unmute" : "Mute"}
-                  >
-                    {isMuted ? (
-                      <VolumeX className="h-6 w-6" />
-                    ) : (
-                      <Volume2 className="h-6 w-6" />
-                    )}
-                  </Button>
-
-                  <Button
-                    size="lg"
-                    onClick={isRecording ? stopRecording : startRecording}
-                    disabled={isProcessing || !sessionId}
-                    className={`h-20 w-20 rounded-full ${
-                      isRecording
-                        ? "bg-red-500 hover:bg-red-600"
-                        : "bg-primary-500 hover:bg-primary-600"
-                    }`}
-                    aria-label={isRecording ? "Stop recording" : "Start recording"}
-                  >
-                    {isRecording ? (
-                      <MicOff className="h-10 w-10" />
-                    ) : (
-                      <Mic className="h-10 w-10" />
-                    )}
-                  </Button>
-
-                  <div className="text-sm text-neutral-600 text-center min-w-[100px]">
-                    {isRecording ? (
-                      <span className="text-red-600 font-medium">Recording...</span>
-                    ) : isListening ? (
-                      <span>Processing...</span>
-                    ) : (
-                      <span>Tap to talk</span>
-                    )}
-                  </div>
-                </div>
-
-                <p className="text-xs text-neutral-500 text-center">
-                  {isRecording
-                    ? "Speak now... Click again to stop"
-                    : "Your conversation is private and confidential"}
-                </p>
-              </div>
+            <div>
+              <h4 className="font-medium text-gray-900">Treatment & Medications</h4>
+              <p className="text-sm text-gray-600">Antiretroviral therapy, drug interactions, and adherence</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-4">
+            <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <TestTube className="w-5 h-5 text-purple-500" />
+            </div>
+            <div>
+              <h4 className="font-medium text-gray-900">Testing & Diagnosis</h4>
+              <p className="text-sm text-gray-600">Testing protocols, window periods, and diagnostic procedures</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-4">
+            <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <BookOpen className="w-5 h-5 text-orange-500" />
+            </div>
+            <div>
+              <h4 className="font-medium text-gray-900">Clinical Guidelines</h4>
+              <p className="text-sm text-gray-600">Latest WHO, CDC, and clinical practice guidelines</p>
             </div>
           </div>
         </div>
       </div>
-    </Layout>
+
+      <button
+        onClick={onConnect}
+        disabled={isConnecting}
+        className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-semibold py-4 px-8 rounded-xl transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+      >
+        {isConnecting ? (
+          <>
+            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            Connecting...
+          </>
+        ) : (
+          <>
+            <Phone className="w-5 h-5" />
+            Start Voice Consultation
+          </>
+        )}
+      </button>
+
+      <p className="text-center text-sm text-gray-500 mt-4">
+        🔒 Secure & confidential • Make sure your microphone is enabled
+      </p>
+    </div>
   );
 }
 
+function VoiceChat({ onDisconnect }: { onDisconnect: () => void }) {
+  const { state, audioTrack } = useVoiceAssistant();
+  const [isListening, setIsListening] = useState(false);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [showTranscript, setShowTranscript] = useState(true);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const processedTexts = useRef(new Set<string>());
+
+  const transcriptionStreams = useTranscriptions();
+
+  const upsertMessage = (
+    role: 'user' | 'assistant',
+    content: string,
+    segmentId: string,
+    isFinal: boolean
+  ) => {
+    setMessages(prev => {
+      const existingIndex = prev.findIndex(m => m.id === segmentId);
+  
+      if (existingIndex !== -1) {
+        const updated = [...prev];
+        updated[existingIndex] = {
+          ...updated[existingIndex],
+          content,
+          timestamp: updated[existingIndex]. timestamp || new Date()
+        };
+        return updated;
+      }
+  
+      return [
+        ...prev,
+        {
+          id: segmentId,
+          role,
+          content,
+          timestamp: new Date()
+        }
+      ];
+    });
+  };
+
+  useEffect(() => {
+    if (!transcriptionStreams || transcriptionStreams.length === 0) return;
+  
+    transcriptionStreams.forEach((stream: any) => {
+      const participantIdentity = stream.participantInfo?. identity || "";
+      const text = stream.text || "";
+      const isFinal = stream.streamInfo?.attributes?.["lk. transcription_final"] === "true";
+      const segmentId = stream.streamInfo?.attributes?.["lk. segment_id"] || "";
+  
+      if (!segmentId || !text. trim()) return;
+  
+      const isUser = participantIdentity.startsWith("patient") || participantIdentity.startsWith("user");
+      const role = isUser ? "user" : "assistant";
+  
+      upsertMessage(role, text, segmentId, isFinal);
+  
+      if (isFinal) {
+        processedTexts.current.add(segmentId);
+      }
+    });
+  }, [transcriptionStreams]);
+  
+  useEffect(() => {
+    setIsListening(state === 'listening');
+  }, [state]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const getStatusText = () => {
+    switch (state) {
+      case 'connecting':
+        return 'Connecting to HIV Assistant...';
+      case 'initializing':
+        return 'Initializing assistant...';
+      case 'listening':
+        return "I'm listening... ";
+      case 'thinking':
+        return 'Analyzing your question...';
+      case 'speaking':
+        return 'Providing guidance...';
+      default:
+        return 'Ready to answer HIV-related questions';
+    }
+  };
+
+  const getStatusColor = () => {
+    switch (state) {
+      case 'listening':
+        return 'from-green-500 to-emerald-600';
+      case 'thinking':
+        return 'from-yellow-500 to-orange-600';
+      case 'speaking':
+        return 'from-blue-500 to-indigo-600';
+      default:
+        return 'from-gray-400 to-gray-500';
+    }
+  };
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="bg-white rounded-3xl shadow-2xl p-8">
+        <div className="text-center mb-6">
+          <div className="relative inline-block mb-4">
+            <div 
+              className={`w-24 h-24 bg-gradient-to-br ${getStatusColor()} rounded-full flex items-center justify-center transition-all duration-300 shadow-lg ${
+                isListening ?  'animate-pulse scale-110' : ''
+              }`}
+            >
+              {isListening ? (
+                <Mic className="w-12 h-12 text-white" />
+              ) : state === 'speaking' ? (
+                <Stethoscope className="w-12 h-12 text-white animate-pulse" />
+              ) : (
+                <Activity className="w-12 h-12 text-white" />
+              )}
+            </div>
+            {isListening && (
+              <>
+                <div className="absolute inset-0 bg-green-500 rounded-full animate-ping opacity-25" />
+                <div className="absolute inset-0 bg-green-400 rounded-full animate-ping opacity-20 animation-delay-150" />
+              </>
+            )}
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">HIV Knowledge Assistant</h2>
+          <p className="text-gray-600">{getStatusText()}</p>
+        </div>
+
+        {audioTrack && (
+          <div className="mb-6">
+            <div className="h-24 flex items-center justify-center bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 rounded-2xl p-4 shadow-inner">
+              <BarVisualizer
+                state={state}
+                barCount={20}
+                trackRef={audioTrack as TrackReferenceOrPlaceholder}
+                options={{ 
+                  minHeight: 4,
+                  maxHeight: 60,
+                }}
+              />
+            </div>
+          </div>
+        )}
+
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-4 mb-4 shadow-sm">
+          <h3 className="font-semibold text-gray-900 mb-2 text-sm">Sample questions:</h3>
+          <div className="space-y-1 text-xs text-gray-700">
+            <p className="flex items-start gap-2">
+              <span className="text-blue-500 mt-0.5">•</span>
+              <span>"What is PrEP and who should consider it?"</span>
+            </p>
+            <p className="flex items-start gap-2">
+              <span className="text-blue-500 mt-0. 5">•</span>
+              <span>"How effective are current HIV treatments?"</span>
+            </p>
+            <p className="flex items-start gap-2">
+              <span className="text-blue-500 mt-0.5">•</span>
+              <span>"When should someone get tested for HIV?"</span>
+            </p>
+            <p className="flex items-start gap-2">
+              <span className="text-blue-500 mt-0.5">•</span>
+              <span>"What are the latest HIV prevention guidelines?"</span>
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <button
+            onClick={() => setShowTranscript(!showTranscript)}
+            className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-2"
+          >
+            <MessageSquare className="w-4 h-4" />
+            {showTranscript ? 'Hide' : 'Show'} Conversation
+          </button>
+          
+          <button
+            onClick={onDisconnect}
+            className="w-full bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white font-semibold py-3 px-4 rounded-xl transition-all transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
+          >
+            <PhoneOff className="w-4 h-4" />
+            End Consultation
+          </button>
+        </div>
+      </div>
+
+      {showTranscript && (
+        <div className="bg-white rounded-3xl shadow-2xl p-6 flex flex-col">
+          <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-200">
+            <div className="flex items-center gap-2">
+              <FileText className="w-5 h-5 text-blue-500" />
+              <h3 className="text-lg font-semibold text-gray-900">Consultation Notes</h3>
+            </div>
+            <span className="text-sm text-gray-500">{messages.length} exchanges</span>
+          </div>
+
+          <div className="flex-1 overflow-y-auto space-y-4 mb-4" style={{ maxHeight: '500px' }}>
+            {messages.length === 0 ? (
+              <div className="text-center text-gray-400 py-12">
+                <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p className="text-sm">Your consultation transcript will appear here</p>
+                <p className="text-xs mt-2">Ask questions to get evidence-based HIV guidance</p>
+              </div>
+            ) : (
+              messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+                      message. role === 'user'
+                        ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white'
+                        : 'bg-gray-100 text-gray-900 border-l-4 border-blue-500'
+                    }`}
+                  >
+                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                    <p className={`text-xs mt-1 ${message.role === 'user' ? 'text-blue-100' : 'text-gray-500'}`}>
+                      {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {message.role === 'assistant' && <span className="ml-2">• Evidence-based</span>}
+                    </p>
+                  </div>
+                </div>
+              ))
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          <div className="text-center text-xs text-gray-500 pt-4 border-t border-gray-200">
+            <p>🔒 All consultations are confidential and based on current HIV guidelines</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
