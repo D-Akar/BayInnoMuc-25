@@ -30,7 +30,7 @@ if not all([NEBIUS_API_KEY, DEEPGRAM_API_KEY, ELEVEN_API_KEY]):
 # Persistent ChromaDB configuration
 PERSIST_DIRECTORY = "./database"
 chroma_client = PersistentClient(path=PERSIST_DIRECTORY)
-collection = chroma_client.get_or_create_collection(name="hiv-knowledge-base")
+collection = chroma_client.get_or_create_collection(name="rag-knowledge-base")
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -39,12 +39,7 @@ logger = logging.getLogger("HIVKnowledgeAssistant")
 # Minimal prewarm model setup
 def prewarm(job_process):
     logger.info("Prewarming models (VAD)...")
-    job_process.userdata["vad"] = silero.VAD.load(
-        min_speech_duration=0.3,
-        min_silence_duration=0.6,
-        padding_duration=0.2,
-        activation_threshold=0.5,
-    )
+    job_process.userdata["vad"] = silero.VAD.load()
     logger.info("VAD ready for use.")
 
 class HIVAssistant(Agent):
