@@ -13,10 +13,10 @@ import os
 load_dotenv()
 
 # Verify API key is loaded
-if not os.getenv("NEBIUS_API_KEY"):
-    print("WARNING: NEBIUS_API_KEY is not set!")
+if not os.getenv("API_KEY"):
+    print("WARNING: API_KEY is not set!")
 else:
-    print("✓ NEBIUS_API_KEY loaded successfully")
+    print("✓ API_KEY loaded successfully")
 
 from app.routers import chat, faq, session
 

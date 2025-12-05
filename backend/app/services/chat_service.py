@@ -1,5 +1,5 @@
 """
-Chat Service - LLM integration for text chat with multi-model fallback support
+Chat Service - LLM integration for text chat using Azure OpenAI
 """
 
 import os
@@ -7,47 +7,30 @@ from typing import List, Dict, Any, Optional
 from openai import OpenAI
 import traceback
 
-nebius_api_key = os.environ.get("NEBIUS_API_KEY")
+# Load Azure API key from environment
+azure_api_key = os.environ.get("API_KEY")
 
-if not nebius_api_key:
-    raise ValueError("NEBIUS_API_KEY environment variable is not set")
+if not azure_api_key:
+    raise ValueError("API_KEY environment variable is not set")
 
+# Initialize Azure OpenAI client
 client = OpenAI(
-    base_url="https://api.tokenfactory.nebius.com/v1/",
-    api_key=nebius_api_key,
+    api_key=azure_api_key,
+    base_url="https://SafeTalkFinal.openai.azure.com/openai/v1/"
 )
 
-# List of available models in order of preference
-# The system will try models in order until one succeeds
+# Available models configuration for Azure OpenAI
 AVAILABLE_MODELS = [
     {
-        "name": "meta-llama/Llama-3.3-70B-Instruct-fast",
-        "description": "Fast 70B model - Best balance of speed and quality",
+        "name": "gpt-4.1-nano",
+        "description": "GPT-4.1 Nano on Azure - Fast and efficient",
         "max_tokens": 4096,
-        "temperature": 0.7,
-    },
-    {
-        "name": "meta-llama/Llama-3.3-70B-Instruct",
-        "description": "Standard 70B model - Higher quality, slower",
-        "max_tokens": 4096,
-        "temperature": 0.7,
-    },
-    {
-        "name": "nvidia/Llama-3_1-Nemotron-Ultra-253B-v1",
-        "description": "Ultra large model - Highest quality, slowest",
-        "max_tokens": 4096,
-        "temperature": 0.7,
-    },
-    {
-        "name": "meta-llama/Meta-Llama-3.1-8B-Instruct-fast",
-        "description": "Fast 8B model - Fastest, lower quality fallback",
-        "max_tokens": 2048,
-        "temperature": 0.7,
+        "temperature": 1.0,  # GPT-4.1 Nano only supports temperature=1.0
     },
 ]
 
-# Primary model to use (can be changed via environment variable)
-PRIMARY_MODEL = os.getenv("NEBIUS_MODEL", AVAILABLE_MODELS[0]["name"])
+# Primary model to use
+PRIMARY_MODEL = os.getenv("AZURE_MODEL", AVAILABLE_MODELS[0]["name"])
 
 # System prompt for HIV care assistant
 SYSTEM_PROMPT = """You are a compassionate and knowledgeable HIV care assistant. Your role is to:
@@ -83,7 +66,7 @@ def call_llm_with_fallback(
     preferred_model: Optional[str] = None
 ) -> tuple[str, str]:
     """
-    Call LLM API with automatic fallback to alternative models if primary fails.
+    Call Azure OpenAI API.
     
     Args:
         messages: List of conversation messages
@@ -92,53 +75,47 @@ def call_llm_with_fallback(
     Returns:
         Tuple of (response_text, model_used)
     """
-    # Determine model order
-    models_to_try = []
+    # Use preferred model or primary model
+    model_name = preferred_model if preferred_model else PRIMARY_MODEL
+    model_config = get_model_config(model_name)
     
-    if preferred_model:
-        models_to_try.append(preferred_model)
+    if not model_config:
+        model_name = PRIMARY_MODEL
+        model_config = AVAILABLE_MODELS[0]
     
-    # Add primary model if not already in list
-    if PRIMARY_MODEL not in models_to_try:
-        models_to_try.append(PRIMARY_MODEL)
-    
-    # Add all other models as fallbacks
-    for model_config in AVAILABLE_MODELS:
-        if model_config["name"] not in models_to_try:
-            models_to_try.append(model_config["name"])
-    
-    last_error = None
-    
-    # Try each model in order
-    for model_name in models_to_try:
-        model_config = get_model_config(model_name)
+    try:
+        print(f"🔄 Using Azure OpenAI model: {model_name}")
+        print(f"📤 Sending {len(messages)} messages to API")
         
-        if not model_config:
-            print(f"⚠️  Model config not found for: {model_name}")
-            continue
+        completion = client.chat.completions.create(
+            model=model_name,
+            messages=messages,
+            temperature=model_config["temperature"],
+            max_completion_tokens=min(800, model_config["max_tokens"]),
+        )
         
-        try:
-            print(f"🔄 Trying model: {model_name}")
-            
-            completion = client.chat.completions.create(
-                model=model_name,
-                messages=messages,
-                temperature=model_config["temperature"],
-                max_tokens=min(800, model_config["max_tokens"]),
-            )
-            
+        print(f"📥 Received completion object: {completion}")
+        print(f"📊 Choices count: {len(completion.choices)}")
+        
+        if completion.choices and len(completion.choices) > 0:
             response_text = completion.choices[0].message.content
-            print(f"✅ Success with model: {model_name}")
-            
-            return response_text, model_name
-            
-        except Exception as e:
-            last_error = e
-            print(f"❌ Failed with {model_name}: {str(e)}")
-            continue
-    
-    # If all models fail, raise the last error
-    raise Exception(f"All models failed. Last error: {str(last_error)}")
+            print(f"📝 Response content length: {len(response_text) if response_text else 0}")
+            print(f"📝 Response preview: {response_text[:200] if response_text else 'EMPTY OR NULL'}")
+        else:
+            print(f"⚠️ No choices returned from API")
+            response_text = ""
+        
+        if not response_text:
+            raise Exception("Empty response received from Azure OpenAI API")
+        
+        print(f"✅ Success with model: {model_name}")
+        
+        return response_text, model_name
+        
+    except Exception as e:
+        print(f"❌ Failed with {model_name}: {str(e)}")
+        traceback.print_exc()
+        raise Exception(f"Azure OpenAI API call failed: {str(e)}")
 
 
 def process_text_message(
