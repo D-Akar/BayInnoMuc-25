@@ -1,0 +1,89 @@
+{
+  "common": {
+    "appName": "HIV-Betreuungshilfe",
+    "confidential": "Vertraulich & Privat",
+    "confidentialText": "Ihr Gespräch ist privat und vertraulich"
+  },
+  "hero": {
+    "title": "Wir sind hier, um Sie zu unterstützen",
+    "subtitle": "Vertrauliche, vorurteilsfreie Unterstützung bei HIV-Tests, Behandlung, Prävention und einem guten Leben mit HIV. Sie sind auf dieser Reise nicht allein.",
+    "browseFAQs": "FAQs durchsuchen",
+    "getSupport": "Unterstützung erhalten",
+    "learnMore": "Mehr erfahren",
+    "izarCenter": "Besuchen Sie auch unser",
+    "izarCenterLink": "Interdisziplinäres HIV Zentrum IZAR"
+  },
+  "faq": {
+    "title": "Häufig gestellte Fragen",
+    "subtitle": "Finden Sie Antworten auf häufige Fragen zu HIV-Tests, Behandlung, Prävention und Leben mit HIV.",
+    "searchPlaceholder": "Nach Antworten suchen...",
+    "noResults": "Es wurden keine FAQs gefunden, die Ihrer Suche entsprechen. Versuchen Sie andere Stichwörter oder durchsuchen Sie nach Kategorie.",
+    "clearSearch": "Suche löschen"
+  },
+  "chatOptions": {
+    "title": "Benötigen Sie persönliche Unterstützung?",
+    "subtitle": "Wir sind hier, um mitfühlende, vertrauliche Unterstützung zu bieten. Wählen Sie die Art der Kommunikation, mit der Sie sich am wohlsten fühlen.",
+    "textChat": {
+      "title": "Chatten Sie mit uns",
+      "description": "Führen Sie ein Textgespräch mit unserem Support-Assistenten. Stellen Sie Fragen, erhalten Sie Informationen und erhalten Sie mitfühlende Anleitung in Ihrem eigenen Tempo.",
+      "button": "Text-Chat starten"
+    },
+    "voiceChat": {
+      "title": "Sprechen Sie mit uns",
+      "description": "Sprechen Sie direkt mit unserem Support-Assistenten. Führen Sie ein natürliches Gespräch und erhalten Sie Echtzeit-Antworten mit Sprachinteraktion.",
+      "button": "Sprach-Chat starten"
+    }
+  },
+  "layout": {
+    "importantNotice": "Wichtiger Hinweis",
+    "importantNoticeText": "Dies ist ein Informationswerkzeug und kein Ersatz für medizinische Beratung. Konsultieren Sie immer qualifizierte Gesundheitsfachkräfte für medizinische Entscheidungen.",
+    "emergencyResources": "Notfallressourcen",
+    "emergencyText": "Im Notfall rufen Sie {phone} an oder gehen Sie zum nächsten Krankenhaus.",
+    "crisisText": "Für medizinische Notfälle außerhalb der Sprechzeiten: {lifeline}",
+    "privacy": "Datenschutz",
+    "privacyText": "Ihre Gespräche sind privat und vertraulich. Wir verpflichten uns, Ihre Privatsphäre und persönlichen Informationen zu schützen.",
+    "copyright": "© {year} HIV-Betreuungshilfe. Alle Rechte vorbehalten."
+  },
+  "textChat": {
+    "initialMessage": "Hallo. Ich bin hier, um Ihnen mitfühlende, vertrauliche Unterstützung und Informationen zur HIV-Betreuung zu bieten. Wie kann ich Ihnen heute helfen?",
+    "placeholder": "Geben Sie Ihre Nachricht ein...",
+    "send": "Senden",
+    "back": "Zurück zur Startseite",
+    "loading": "Denke nach...",
+    "error": "Entschuldigung, etwas ist schief gelaufen. Bitte versuchen Sie es erneut.",
+    "endConversation": "Gespräch beenden"
+  },
+  "voiceChat": {
+    "back": "Zurück zur Startseite",
+    "switchToText": "Zu Text wechseln",
+    "endConversation": "Gespräch beenden",
+    "startTalking": "Klicken Sie auf das Mikrofon, um zu sprechen",
+    "privateConfidential": "Ihr Gespräch ist privat und vertraulich",
+    "recording": "Aufnahme läuft...",
+    "processing": "Verarbeitung...",
+    "tapToTalk": "Zum Sprechen tippen",
+    "speakNow": "Sprechen Sie jetzt... Klicken Sie erneut, um zu stoppen",
+    "mute": "Stumm schalten",
+    "unmute": "Stummschaltung aufheben",
+    "stopRecording": "Aufnahme stoppen",
+    "startRecording": "Aufnahme starten",
+    "errorProcessing": "Es tut mir leid, ich habe Probleme bei der Verarbeitung Ihrer Audioaufnahme. Bitte versuchen Sie es erneut.",
+    "microphoneError": "Mikrofonzugriff nicht möglich. Bitte überprüfen Sie Ihre Berechtigungen und versuchen Sie es erneut."
+  },
+  "faqCategories": {
+    "testing": "Tests & Diagnose",
+    "treatment": "Behandlung & Medikamente",
+    "living": "Leben mit HIV",
+    "prevention": "Prävention & PrEP",
+    "support": "Unterstützungsressourcen"
+  },
+  "language": {
+    "select": "Sprache auswählen",
+    "english": "Englisch",
+    "german": "Deutsch",
+    "ukrainian": "Ukrainisch",
+    "french": "Französisch",
+    "turkish": "Türkisch"
+  }
+}
+

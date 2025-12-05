@@ -1,0 +1,88 @@
+{
+    "common": {
+        "appName": "HIV Care Assistance",
+        "confidential": "Confidential & Private",
+        "confidentialText": "Your conversation is private and confidential"
+    },
+    "hero": {
+        "title": "We're here to support you",
+        "subtitle": "Confidential, judgment-free assistance for HIV testing, treatment, prevention, and living well with HIV. You're not alone in this journey.",
+        "browseFAQs": "Browse FAQs",
+        "getSupport": "Get Support",
+        "learnMore": "Learn more",
+        "izarCenter": "Also visit our",
+        "izarCenterLink": "Interdisciplinary HIV Centre IZAR"
+    },
+    "faq": {
+        "title": "Frequently Asked Questions",
+        "subtitle": "Find answers to common questions about HIV testing, treatment, prevention, and living with HIV.",
+        "searchPlaceholder": "Search for answers...",
+        "noResults": "No FAQs found matching your search. Try different keywords or browse by category.",
+        "clearSearch": "Clear search"
+    },
+    "chatOptions": {
+        "title": "Need personalized support?",
+        "subtitle": "We're here to provide compassionate, confidential assistance. Choose the way you're most comfortable communicating.",
+        "textChat": {
+            "title": "Chat with us",
+            "description": "Have a text conversation with our support assistant. Ask questions, get information, and receive compassionate guidance at your own pace.",
+            "button": "Start Text Chat"
+        },
+        "voiceChat": {
+            "title": "Talk with us",
+            "description": "Speak directly with our support assistant. Have a natural conversation and receive real-time responses with voice interaction.",
+            "button": "Start Voice Chat"
+        }
+    },
+    "layout": {
+        "importantNotice": "Important Notice",
+        "importantNoticeText": "This is an informational tool, not a replacement for medical advice. Always consult with qualified healthcare professionals for medical decisions.",
+        "emergencyResources": "Emergency Resources",
+        "emergencyText": "In an emergency, call {phone} or go to the nearest hospital.",
+        "crisisText": "For medical emergencies outside office hours: {lifeline}",
+        "privacy": "Privacy",
+        "privacyText": "Your conversations are private and confidential. We are committed to protecting your privacy and personal information.",
+        "copyright": "© {year} HIV Care Assistance. All rights reserved."
+    },
+    "textChat": {
+        "initialMessage": "Hello. I'm here to provide you with compassionate, confidential support and information about HIV care. How can I help you today?",
+        "placeholder": "Type your message...",
+        "send": "Send",
+        "back": "Back to Home",
+        "loading": "Thinking...",
+        "error": "Sorry, something went wrong. Please try again.",
+        "endConversation": "End Conversation"
+    },
+    "voiceChat": {
+        "back": "Back to Home",
+        "switchToText": "Switch to Text",
+        "endConversation": "End Conversation",
+        "startTalking": "Click the microphone to start talking",
+        "privateConfidential": "Your conversation is private and confidential",
+        "recording": "Recording...",
+        "processing": "Processing...",
+        "tapToTalk": "Tap to talk",
+        "speakNow": "Speak now... Click again to stop",
+        "mute": "Mute",
+        "unmute": "Unmute",
+        "stopRecording": "Stop recording",
+        "startRecording": "Start recording",
+        "errorProcessing": "I'm sorry, I'm having trouble processing your audio. Please try again.",
+        "microphoneError": "Unable to access microphone. Please check your permissions and try again."
+    },
+    "faqCategories": {
+        "testing": "Testing & Diagnosis",
+        "treatment": "Treatment & Medication",
+        "living": "Living with HIV",
+        "prevention": "Prevention & PrEP",
+        "support": "Support Resources"
+    },
+    "language": {
+        "select": "Select Language",
+        "english": "English",
+        "german": "German",
+        "ukrainian": "Ukrainian",
+        "french": "French",
+        "turkish": "Turkish"
+    }
+}

@@ -12,9 +12,15 @@
     @apply border-neutral-200;
   }
 
+  html {
+    font-size: 18px;
+  }
+
   body {
     @apply bg-neutral-50 text-neutral-900 antialiased;
-    font-family: "Inter", "Open Sans", system-ui, sans-serif;
+    font-family: var(--font-roboto), "Roboto", system-ui, sans-serif;
+    font-size: 1rem; /* 18px base */
+    line-height: 1.5;
   }
 }
 

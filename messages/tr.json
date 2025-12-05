@@ -1,0 +1,89 @@
+{
+  "common": {
+    "appName": "HIV Bakım Yardımı",
+    "confidential": "Gizli ve Özel",
+    "confidentialText": "Konuşmanız özel ve gizlidir"
+  },
+  "hero": {
+    "title": "Size destek olmak için buradayız",
+    "subtitle": "HIV testi, tedavi, önleme ve HIV ile iyi yaşamak için gizli, yargısız yardım. Bu yolculukta yalnız değilsiniz.",
+    "browseFAQs": "SSS'leri Gözat",
+    "getSupport": "Destek Al",
+    "learnMore": "Daha fazla bilgi",
+    "izarCenter": "Ayrıca ziyaret edin",
+    "izarCenterLink": "Disiplinler Arası HIV Merkezi IZAR"
+  },
+  "faq": {
+    "title": "Sık Sorulan Sorular",
+    "subtitle": "HIV testi, tedavi, önleme ve HIV ile yaşamak hakkında yaygın soruların yanıtlarını bulun.",
+    "searchPlaceholder": "Yanıtları ara...",
+    "noResults": "Aramanıza uyan SSS bulunamadı. Farklı anahtar kelimeler deneyin veya kategoriye göre göz atın.",
+    "clearSearch": "Aramayı temizle"
+  },
+  "chatOptions": {
+    "title": "Kişiselleştirilmiş destek mi gerekiyor?",
+    "subtitle": "Şefkatli, gizli yardım sağlamak için buradayız. En rahat iletişim kurduğunuz yolu seçin.",
+    "textChat": {
+      "title": "Bizimle sohbet edin",
+      "description": "Destek asistanımızla metin konuşması yapın. Sorular sorun, bilgi alın ve kendi hızınızda şefkatli rehberlik alın.",
+      "button": "Metin Sohbetini Başlat"
+    },
+    "voiceChat": {
+      "title": "Bizimle konuşun",
+      "description": "Destek asistanımızla doğrudan konuşun. Doğal bir konuşma yapın ve ses etkileşimi ile gerçek zamanlı yanıtlar alın.",
+      "button": "Sesli Sohbeti Başlat"
+    }
+  },
+  "layout": {
+    "importantNotice": "Önemli Uyarı",
+    "importantNoticeText": "Bu bir bilgilendirme aracıdır, tıbbi tavsiyenin yerine geçmez. Tıbbi kararlar için her zaman nitelikli sağlık profesyonellerine danışın.",
+    "emergencyResources": "Acil Durum Kaynakları",
+    "emergencyText": "Acil durumda {phone} numaralı telefonu arayın veya en yakın hastaneye gidin.",
+    "crisisText": "Çalışma saatleri dışındaki tıbbi acil durumlar için: {lifeline}",
+    "privacy": "Gizlilik",
+    "privacyText": "Konuşmalarınız özel ve gizlidir. Gizliliğinizi ve kişisel bilgilerinizi korumaya kararlıyız.",
+    "copyright": "© {year} HIV Bakım Yardımı. Tüm hakları saklıdır."
+  },
+  "textChat": {
+    "initialMessage": "Merhaba. Size HIV bakımı hakkında şefkatli, gizli destek ve bilgi sağlamak için buradayım. Bugün size nasıl yardımcı olabilirim?",
+    "placeholder": "Mesajınızı yazın...",
+    "send": "Gönder",
+    "back": "Ana Sayfaya Dön",
+    "loading": "Düşünüyor...",
+    "error": "Üzgünüm, bir şeyler yanlış gitti. Lütfen tekrar deneyin.",
+    "endConversation": "Konuşmayı Sonlandır"
+  },
+  "voiceChat": {
+    "back": "Ana Sayfaya Dön",
+    "switchToText": "Metne Geç",
+    "endConversation": "Konuşmayı Sonlandır",
+    "startTalking": "Konuşmaya başlamak için mikrofonu tıklayın",
+    "privateConfidential": "Konuşmanız özel ve gizlidir",
+    "recording": "Kayıt yapılıyor...",
+    "processing": "İşleniyor...",
+    "tapToTalk": "Konuşmak için dokunun",
+    "speakNow": "Şimdi konuşun... Durdurmak için tekrar tıklayın",
+    "mute": "Sessize Al",
+    "unmute": "Sesi Aç",
+    "stopRecording": "Kaydı durdur",
+    "startRecording": "Kaydı başlat",
+    "errorProcessing": "Üzgünüm, sesinizi işlerken sorun yaşıyorum. Lütfen tekrar deneyin.",
+    "microphoneError": "Mikrofona erişilemiyor. Lütfen izinlerinizi kontrol edin ve tekrar deneyin."
+  },
+  "faqCategories": {
+    "testing": "Test ve Teşhis",
+    "treatment": "Tedavi ve İlaç",
+    "living": "HIV ile Yaşamak",
+    "prevention": "Önleme ve PrEP",
+    "support": "Destek Kaynakları"
+  },
+  "language": {
+    "select": "Dil Seçin",
+    "english": "İngilizce",
+    "german": "Almanca",
+    "ukrainian": "Ukraynaca",
+    "french": "Fransızca",
+    "turkish": "Türkçe"
+  }
+}
+

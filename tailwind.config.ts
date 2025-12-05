@@ -9,42 +9,42 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Warm, compassionate color palette
+        // TUM color palette - all blues, no warm tones
         primary: {
-          50: "#fff5f2",
-          100: "#ffe8e0",
-          200: "#ffd5c7",
-          300: "#ffb8a0",
-          400: "#ff8f6e",
-          500: "#ff6b47", // Coral/peach primary
-          600: "#ed4d2a",
-          700: "#c83a1a",
-          800: "#9f3118",
-          900: "#802e1a",
+          50: "#e8f0f7",   // Very light cool blue
+          100: "#c2d9ea",  // Light cool blue
+          200: "#9abddb",  // Light-medium cool blue
+          300: "#729bc9",  // Medium cool blue
+          400: "#4a7bb7",  // Medium-dark cool blue
+          500: "#0E396E",  // TUM lighter blue - primary
+          600: "#0A2D57",  // TUM mid blue
+          700: "#072140",  // TUM dark blue
+          800: "#051830",
+          900: "#031023",
         },
         secondary: {
-          50: "#f0f9ff",
-          100: "#e0f2fe",
-          200: "#bae6fd",
-          300: "#7dd3fc",
-          400: "#38bdf8",
-          500: "#0ea5e9", // Warm blue
-          600: "#0284c7",
-          700: "#0369a1",
-          800: "#075985",
-          900: "#0c4a6e",
+          50: "#e8f0f7",   // Very light cool blue
+          100: "#c2d9ea",  // Light cool blue
+          200: "#9abddb",  // Light-medium cool blue
+          300: "#729bc9",  // Medium cool blue
+          400: "#4a7bb7",  // Medium-dark cool blue
+          500: "#0A2D57",  // TUM mid blue - secondary
+          600: "#082649",
+          700: "#072140",
+          800: "#051830",
+          900: "#031023",
         },
         accent: {
-          50: "#faf5ff",
-          100: "#f3e8ff",
-          200: "#e9d5ff",
-          300: "#d8b4fe",
-          400: "#c084fc",
-          500: "#a855f7", // Gentle purple
-          600: "#9333ea",
-          700: "#7e22ce",
-          800: "#6b21a8",
-          900: "#581c87",
+          50: "#e8f0f7",   // Very light cool blue
+          100: "#c2d9ea",  // Light cool blue
+          200: "#9abddb",  // Light-medium cool blue
+          300: "#729bc9",  // Medium cool blue
+          400: "#4a7bb7",  // Medium-dark cool blue
+          500: "#072140",  // TUM dark blue - accent
+          600: "#051830",
+          700: "#031023",
+          800: "#020913",
+          900: "#010509",
         },
         neutral: {
           50: "#fafafa",
@@ -65,7 +65,10 @@ const config: Config = {
         "2xl": "20px",
       },
       fontFamily: {
-        sans: ["Inter", "Open Sans", "system-ui", "sans-serif"],
+        sans: ["Roboto", "system-ui", "sans-serif"],
+      },
+      fontSize: {
+        base: "18px",
       },
       spacing: {
         "18": "4.5rem",
