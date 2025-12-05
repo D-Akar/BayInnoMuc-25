@@ -1,0 +1,15 @@
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+python-multipart==0.0.9
+pydantic==2.9.0
+
+# TODO: Add dependencies for future integrations:
+# openai>=1.0.0  # For GPT-4 integration
+# anthropic>=0.18.0  # For Claude integration
+# whisper  # For speech-to-text
+# elevenlabs  # For text-to-speech
+# redis  # For session management
+# psycopg2-binary  # For PostgreSQL
+# numpy  # For vector operations
+# sentence-transformers  # For semantic search
+
