@@ -50,6 +50,7 @@
         "send": "Send",
         "back": "Back to Home",
         "loading": "Thinking...",
+        "thinking": "Thinking...",
         "error": "Sorry, something went wrong. Please try again.",
         "endConversation": "End Conversation"
     },

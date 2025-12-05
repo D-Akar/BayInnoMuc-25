@@ -6,29 +6,42 @@ TODO: Add authentication, rate limiting, logging, and monitoring
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from dotenv import load_dotenv
 import uvicorn
+import os
+
+load_dotenv()
+
+# Verify API key is loaded
+if not os.getenv("NEBIUS_API_KEY"):
+    print("WARNING: NEBIUS_API_KEY is not set!")
+else:
+    print("✓ NEBIUS_API_KEY loaded successfully")
 
 from app.routers import chat, faq, session
 
 app = FastAPI(
-    title="HIV Care Assistance API",
-    description="Backend API for compassionate HIV care assistance",
-    version="1.0.0",
+    title="HIV Care Support API",
+    description="Backend API for HIV care support application",
+    version="1.0.0"
 )
 
-# CORS middleware - configure for production
+# Configure CORS
+allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000").split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],  # TODO: Configure for production
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Include routers
-app.include_router(chat.router, prefix="/api/chat", tags=["chat"])
-app.include_router(faq.router, prefix="/api/faq", tags=["faq"])
-app.include_router(session.router, prefix="/api/session", tags=["session"])
+# Include routers with API prefix
+app.include_router(chat.router, prefix="/api")
+app.include_router(faq.router, prefix="/api")
+app.include_router(session.router, prefix="/api")
+
 
 
 @app.get("/")
@@ -39,6 +52,18 @@ async def root():
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
+
+@app.get("/api")
+async def api_root():
+    return {
+        "message": "HIV Care Support API",
+        "endpoints": {
+            "chat": "/api/chat/text",
+            "voice_transcribe": "/api/chat/voice/transcribe",
+            "faq_search": "/api/faq/search",
+            "session": "/api/session"
+        }
+    }
 
 
 if __name__ == "__main__":

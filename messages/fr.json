@@ -49,6 +49,7 @@
     "placeholder": "Tapez votre message...",
     "send": "Envoyer",
     "back": "Retour à l'accueil",
+    "thinking": "Réflexion...",
     "loading": "Réflexion...",
     "error": "Désolé, quelque chose s'est mal passé. Veuillez réessayer.",
     "endConversation": "Terminer la Conversation"

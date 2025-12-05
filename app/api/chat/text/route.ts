@@ -8,42 +8,57 @@ import { processTextMessage } from "@/lib/backend/chatService";
 // TODO: Add medical safety checks and disclaimers
 // TODO: Log conversations for quality improvement (with privacy considerations)
 
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { message, sessionId } = body;
+    const { message, sessionId, conversationHistory } = body;
 
-    if (!message || typeof message !== "string") {
+    if (!message || !sessionId) {
       return NextResponse.json(
-        { error: "Message is required and must be a string" },
+        { error: "Message and sessionId are required" },
         { status: 400 }
       );
     }
 
-    if (!sessionId || typeof sessionId !== "string") {
-      return NextResponse.json(
-        { error: "Session ID is required" },
-        { status: 400 }
-      );
+    console.log(`Forwarding request to backend: ${BACKEND_URL}/api/chat/text`);
+
+    // Forward request to Python backend
+    const response = await fetch(`${BACKEND_URL}/api/chat/text`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        message,
+        sessionId,
+        conversationHistory: conversationHistory || [],
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      console.error("Backend error:", error);
+      throw new Error(error.detail || "Backend request failed");
     }
 
-    // TODO: Retrieve conversation history from database
-    const conversationHistory = undefined;
+    const data = await response.json();
 
-    // Process the message
-    const response = await processTextMessage(
-      message,
-      sessionId,
-      conversationHistory
-    );
-
-    // TODO: Store message and response in conversation history
-
-    return NextResponse.json(response);
+    return NextResponse.json({
+      response: data.response,
+      suggestions: data.suggestions || [],
+      sessionId: data.session_id,
+      modelUsed: data.model_used, // Include which model was used
+    });
   } catch (error) {
-    console.error("Error processing text message:", error);
+    console.error("Chat API error:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      {
+        response: "I apologize, but I'm experiencing technical difficulties. Please try again in a moment.",
+        suggestions: ["Try again", "Browse FAQs", "Contact support"],
+        error: error instanceof Error ? error.message : "Unknown error",
+      },
       { status: 500 }
     );
   }
