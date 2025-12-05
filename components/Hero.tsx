@@ -9,7 +9,7 @@ export default function Hero() {
   const t = useTranslations();
 
   return (
-    <section className="relative py-20 md:py-28 bg-gradient-to-br from-primary-50 via-secondary-50 to-accent-50 overflow-hidden">
+    <section className="relative py-20 md:pt-20 md:pb-16 bg-gradient-to-br from-primary-50 via-secondary-50 to-accent-50 overflow-hidden">
       {/* Decorative background elements */}
       <div className="absolute inset-0 opacity-10">
         <div className="absolute top-20 left-10 w-72 h-72 bg-primary-300 rounded-full blur-3xl"></div>

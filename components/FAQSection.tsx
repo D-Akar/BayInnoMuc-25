@@ -9,7 +9,7 @@ import { getFAQsByLocale, getCategoriesByLocale, searchFAQsByLocale, type FAQIte
 
 export default function FAQSection() {
   const t = useTranslations();
-  const locale = useLocale() as 'en' | 'de' | 'uk';
+  const locale = useLocale() as 'en' | 'de' | 'uk' | 'fr' | 'tr';
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredFAQs, setFilteredFAQs] = useState<FAQItem[]>(getFAQsByLocale(locale));
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);

@@ -12,6 +12,8 @@ const languageNames: Record<Locale, string> = {
   en: "English",
   de: "Deutsch",
   uk: "Українська",
+  fr: "Français",
+  tr: "Türkçe",
 };
 
 export default function LanguageSelector() {

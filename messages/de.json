@@ -81,7 +81,9 @@
     "select": "Sprache auswählen",
     "english": "Englisch",
     "german": "Deutsch",
-    "ukrainian": "Ukrainisch"
+    "ukrainian": "Ukrainisch",
+    "french": "Französisch",
+    "turkish": "Türkisch"
   }
 }
 

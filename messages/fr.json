@@ -1,0 +1,89 @@
+{
+  "common": {
+    "appName": "Assistance VIH",
+    "confidential": "Confidentiel et Privé",
+    "confidentialText": "Votre conversation est privée et confidentielle"
+  },
+  "hero": {
+    "title": "Nous sommes là pour vous soutenir",
+    "subtitle": "Assistance confidentielle et sans jugement pour les tests VIH, le traitement, la prévention et bien vivre avec le VIH. Vous n'êtes pas seul dans ce parcours.",
+    "browseFAQs": "Parcourir les FAQ",
+    "getSupport": "Obtenir de l'aide",
+    "learnMore": "En savoir plus",
+    "izarCenter": "Visitez également notre",
+    "izarCenterLink": "Centre Interdisciplinaire VIH IZAR"
+  },
+  "faq": {
+    "title": "Questions Fréquemment Posées",
+    "subtitle": "Trouvez des réponses aux questions courantes sur les tests VIH, le traitement, la prévention et vivre avec le VIH.",
+    "searchPlaceholder": "Rechercher des réponses...",
+    "noResults": "Aucune FAQ trouvée correspondant à votre recherche. Essayez d'autres mots-clés ou parcourez par catégorie.",
+    "clearSearch": "Effacer la recherche"
+  },
+  "chatOptions": {
+    "title": "Besoin d'un soutien personnalisé ?",
+    "subtitle": "Nous sommes là pour fournir une assistance compatissante et confidentielle. Choisissez le mode de communication avec lequel vous êtes le plus à l'aise.",
+    "textChat": {
+      "title": "Discutez avec nous",
+      "description": "Ayez une conversation textuelle avec notre assistant de soutien. Posez des questions, obtenez des informations et recevez des conseils compatissants à votre propre rythme.",
+      "button": "Démarrer le Chat Textuel"
+    },
+    "voiceChat": {
+      "title": "Parlez avec nous",
+      "description": "Parlez directement avec notre assistant de soutien. Ayez une conversation naturelle et recevez des réponses en temps réel avec interaction vocale.",
+      "button": "Démarrer le Chat Vocal"
+    }
+  },
+  "layout": {
+    "importantNotice": "Avis Important",
+    "importantNoticeText": "Ceci est un outil d'information, pas un remplacement pour les conseils médicaux. Consultez toujours des professionnels de la santé qualifiés pour les décisions médicales.",
+    "emergencyResources": "Ressources d'Urgence",
+    "emergencyText": "En cas d'urgence, appelez {phone} ou allez à l'hôpital le plus proche.",
+    "crisisText": "Pour les urgences médicales en dehors des heures de bureau : {lifeline}",
+    "privacy": "Confidentialité",
+    "privacyText": "Vos conversations sont privées et confidentielles. Nous nous engageons à protéger votre vie privée et vos informations personnelles.",
+    "copyright": "© {year} Assistance VIH. Tous droits réservés."
+  },
+  "textChat": {
+    "initialMessage": "Bonjour. Je suis là pour vous fournir un soutien compatissant et confidentiel ainsi que des informations sur les soins VIH. Comment puis-je vous aider aujourd'hui ?",
+    "placeholder": "Tapez votre message...",
+    "send": "Envoyer",
+    "back": "Retour à l'accueil",
+    "loading": "Réflexion...",
+    "error": "Désolé, quelque chose s'est mal passé. Veuillez réessayer.",
+    "endConversation": "Terminer la Conversation"
+  },
+  "voiceChat": {
+    "back": "Retour à l'accueil",
+    "switchToText": "Passer au Texte",
+    "endConversation": "Terminer la Conversation",
+    "startTalking": "Cliquez sur le microphone pour commencer à parler",
+    "privateConfidential": "Votre conversation est privée et confidentielle",
+    "recording": "Enregistrement...",
+    "processing": "Traitement...",
+    "tapToTalk": "Appuyez pour parler",
+    "speakNow": "Parlez maintenant... Cliquez à nouveau pour arrêter",
+    "mute": "Muet",
+    "unmute": "Activer le son",
+    "stopRecording": "Arrêter l'enregistrement",
+    "startRecording": "Démarrer l'enregistrement",
+    "errorProcessing": "Je suis désolé, j'ai des difficultés à traiter votre audio. Veuillez réessayer.",
+    "microphoneError": "Impossible d'accéder au microphone. Veuillez vérifier vos permissions et réessayer."
+  },
+  "faqCategories": {
+    "testing": "Tests et Diagnostic",
+    "treatment": "Traitement et Médicaments",
+    "living": "Vivre avec le VIH",
+    "prevention": "Prévention et PrEP",
+    "support": "Ressources de Soutien"
+  },
+  "language": {
+    "select": "Sélectionner la Langue",
+    "english": "Anglais",
+    "german": "Allemand",
+    "ukrainian": "Ukrainien",
+    "french": "Français",
+    "turkish": "Turc"
+  }
+}
+
