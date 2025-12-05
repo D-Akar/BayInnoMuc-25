@@ -7,11 +7,11 @@ export default function Home() {
   return (
     <Layout>
       <Hero />
-      <div id="faq">
-        <FAQSection />
-      </div>
       <div id="chat-options">
         <ChatOptions />
+      </div>
+      <div id="faq">
+        <FAQSection />
       </div>
     </Layout>
   );

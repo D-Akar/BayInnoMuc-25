@@ -54,9 +54,9 @@ export default function Hero() {
         {/* Scroll indicator */}
         <div className="mt-16 flex justify-center">
           <a
-            href="#faq"
+            href="#chat-options"
             className="flex flex-col items-center gap-2 text-neutral-600 hover:text-neutral-900 transition-colors"
-            aria-label="Scroll to FAQs"
+            aria-label="Scroll to Support Options"
           >
             <span className="text-sm">{t("hero.learnMore")}</span>
             <ArrowDown className="h-6 w-6 animate-bounce" />
