@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Mic, MicOff, Volume2, VolumeX, ArrowLeft, X, Loader2 } from "lucide-react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import Layout from "@/components/Layout";
 import { API_ENDPOINTS } from "@/lib/config";
 
@@ -14,6 +15,7 @@ interface Transcription {
 }
 
 export default function VoiceChatInterface() {
+  const t = useTranslations();
   const [isRecording, setIsRecording] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [transcriptions, setTranscriptions] = useState<Transcription[]>([]);
@@ -109,9 +111,7 @@ export default function VoiceChatInterface() {
       setIsListening(true);
     } catch (error) {
       console.error("Error starting recording:", error);
-      alert(
-        "Unable to access microphone. Please check your permissions and try again."
-      );
+      alert(t("voiceChat.microphoneError"));
     }
   };
 
@@ -157,8 +157,7 @@ export default function VoiceChatInterface() {
 
       // TODO: Process transcription through chat service and get response
       // For now, use a placeholder response
-      const responseText =
-        "Thank you for your message. I'm here to provide you with compassionate support and information about HIV care. How can I help you today?";
+      const responseText = t("textChat.initialMessage");
 
       // Add assistant transcription
       setTranscriptions((prev) => [
@@ -186,8 +185,7 @@ export default function VoiceChatInterface() {
       setTranscriptions((prev) => [
         ...prev,
         {
-          text:
-            "I'm sorry, I'm having trouble processing your audio. Please try again.",
+          text: t("voiceChat.errorProcessing"),
           role: "assistant",
           timestamp: new Date(),
         },
@@ -206,19 +204,19 @@ export default function VoiceChatInterface() {
             <Link href="/">
               <Button variant="ghost" size="sm">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Home
+                {t("voiceChat.back")}
               </Button>
             </Link>
             <div className="flex gap-2">
               <Link href="/chat/text">
                 <Button variant="ghost" size="sm">
-                  Switch to Text
+                  {t("voiceChat.switchToText")}
                 </Button>
               </Link>
               <Link href="/">
                 <Button variant="ghost" size="sm">
                   <X className="h-4 w-4 mr-2" />
-                  End Conversation
+                  {t("voiceChat.endConversation")}
                 </Button>
               </Link>
             </div>
@@ -231,10 +229,10 @@ export default function VoiceChatInterface() {
               {transcriptions.length === 0 && (
                 <div className="text-center py-12">
                   <p className="text-neutral-600 text-lg mb-2">
-                    Click the microphone to start talking
+                    {t("voiceChat.startTalking")}
                   </p>
                   <p className="text-sm text-neutral-500">
-                    Your conversation is private and confidential
+                    {t("voiceChat.privateConfidential")}
                   </p>
                 </div>
               )}
@@ -311,7 +309,7 @@ export default function VoiceChatInterface() {
                     variant="ghost"
                     size="lg"
                     onClick={() => setIsMuted(!isMuted)}
-                    aria-label={isMuted ? "Unmute" : "Mute"}
+                    aria-label={isMuted ? t("voiceChat.unmute") : t("voiceChat.mute")}
                   >
                     {isMuted ? (
                       <VolumeX className="h-6 w-6" />
@@ -329,7 +327,7 @@ export default function VoiceChatInterface() {
                         ? "bg-red-500 hover:bg-red-600"
                         : "bg-primary-500 hover:bg-primary-600"
                     }`}
-                    aria-label={isRecording ? "Stop recording" : "Start recording"}
+                    aria-label={isRecording ? t("voiceChat.stopRecording") : t("voiceChat.startRecording")}
                   >
                     {isRecording ? (
                       <MicOff className="h-10 w-10" />
@@ -340,19 +338,19 @@ export default function VoiceChatInterface() {
 
                   <div className="text-sm text-neutral-600 text-center min-w-[100px]">
                     {isRecording ? (
-                      <span className="text-red-600 font-medium">Recording...</span>
+                      <span className="text-red-600 font-medium">{t("voiceChat.recording")}</span>
                     ) : isListening ? (
-                      <span>Processing...</span>
+                      <span>{t("voiceChat.processing")}</span>
                     ) : (
-                      <span>Tap to talk</span>
+                      <span>{t("voiceChat.tapToTalk")}</span>
                     )}
                   </div>
                 </div>
 
                 <p className="text-xs text-neutral-500 text-center">
                   {isRecording
-                    ? "Speak now... Click again to stop"
-                    : "Your conversation is private and confidential"}
+                    ? t("voiceChat.speakNow")
+                    : t("voiceChat.privateConfidential")}
                 </p>
               </div>
             </div>

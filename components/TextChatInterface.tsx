@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Send, X, ArrowLeft, Loader2 } from "lucide-react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import Layout from "@/components/Layout";
 import { API_ENDPOINTS } from "@/lib/config";
 
@@ -16,12 +17,12 @@ interface Message {
 }
 
 export default function TextChatInterface() {
+  const t = useTranslations();
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
       role: "assistant",
-      content:
-        "Hello. I'm here to provide you with compassionate, confidential support and information about HIV care. How can I help you today?",
+      content: t("textChat.initialMessage"),
       timestamp: new Date(),
     },
   ]);
@@ -108,8 +109,7 @@ export default function TextChatInterface() {
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content:
-          "I'm sorry, I'm having trouble connecting right now. Please try again in a moment, or feel free to browse our FAQs for information.",
+        content: t("textChat.error"),
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);
@@ -135,13 +135,13 @@ export default function TextChatInterface() {
             <Link href="/">
               <Button variant="ghost" size="sm">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Home
+                {t("textChat.back")}
               </Button>
             </Link>
             <Link href="/">
               <Button variant="ghost" size="sm">
                 <X className="h-4 w-4 mr-2" />
-                End Conversation
+                {t("textChat.endConversation")}
               </Button>
             </Link>
           </div>
@@ -185,7 +185,7 @@ export default function TextChatInterface() {
               {isLoading && (
                 <div className="flex justify-start">
                   <div className="bg-neutral-100 rounded-2xl px-4 py-3">
-                    <Loader2 className="h-5 w-5 animate-spin text-neutral-500" />
+                    <p className="text-neutral-500 text-sm">{t("textChat.loading")}</p>
                   </div>
                 </div>
               )}
@@ -198,7 +198,7 @@ export default function TextChatInterface() {
                 <Input
                   ref={inputRef}
                   type="text"
-                  placeholder="Type your message..."
+                  placeholder={t("textChat.placeholder")}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyPress={handleKeyPress}
@@ -218,7 +218,7 @@ export default function TextChatInterface() {
                 </Button>
               </div>
               <p className="text-xs text-neutral-500 mt-2 text-center">
-                Your conversation is private and confidential
+                {t("common.confidentialText")}
               </p>
             </div>
           </div>

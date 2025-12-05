@@ -1,33 +1,31 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations, useLocale } from "next-intl";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Input } from "@/components/ui/input";
 import { Search, X } from "lucide-react";
-import { faqData, type FAQItem, faqCategories } from "@/lib/backend/faqService";
+import { getFAQsByLocale, getCategoriesByLocale, searchFAQsByLocale, type FAQItem } from "@/lib/backend/faqServiceMultilingual";
 
 export default function FAQSection() {
+  const t = useTranslations();
+  const locale = useLocale() as 'en' | 'de' | 'uk';
   const [searchQuery, setSearchQuery] = useState("");
-  const [filteredFAQs, setFilteredFAQs] = useState<FAQItem[]>(faqData);
+  const [filteredFAQs, setFilteredFAQs] = useState<FAQItem[]>(getFAQsByLocale(locale));
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const categories = getCategoriesByLocale(locale);
 
   useEffect(() => {
     if (searchQuery.trim()) {
-      // Simple client-side search
-      const query = searchQuery.toLowerCase();
-      const filtered = faqData.filter(
-        (faq) =>
-          faq.question.toLowerCase().includes(query) ||
-          faq.answer.toLowerCase().includes(query) ||
-          faq.tags.some((tag) => tag.toLowerCase().includes(query))
-      );
+      const filtered = searchFAQsByLocale(searchQuery, locale);
       setFilteredFAQs(filtered);
     } else if (selectedCategory) {
-      setFilteredFAQs(faqData.filter((faq) => faq.category === selectedCategory));
+      const filtered = getFAQsByLocale(locale).filter((faq) => faq.category === selectedCategory);
+      setFilteredFAQs(filtered);
     } else {
-      setFilteredFAQs(faqData);
+      setFilteredFAQs(getFAQsByLocale(locale));
     }
-  }, [searchQuery, selectedCategory]);
+  }, [searchQuery, selectedCategory, locale]);
 
   const handleCategoryClick = (category: string) => {
     if (selectedCategory === category) {
@@ -43,11 +41,10 @@ export default function FAQSection() {
       <div className="container mx-auto px-4 max-w-4xl">
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-neutral-900 mb-4">
-            Frequently Asked Questions
+            {t("faq.title")}
           </h2>
           <p className="text-lg text-neutral-700 max-w-2xl mx-auto">
-            Find answers to common questions about HIV testing, treatment,
-            prevention, and living with HIV.
+            {t("faq.subtitle")}
           </p>
         </div>
 
@@ -56,7 +53,7 @@ export default function FAQSection() {
           <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-neutral-400" />
           <Input
             type="text"
-            placeholder="Search for answers..."
+            placeholder={t("faq.searchPlaceholder")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-12 pr-12"
@@ -65,7 +62,7 @@ export default function FAQSection() {
             <button
               onClick={() => setSearchQuery("")}
               className="absolute right-4 top-1/2 transform -translate-y-1/2 text-neutral-400 hover:text-neutral-600"
-              aria-label="Clear search"
+              aria-label={t("faq.clearSearch")}
             >
               <X className="h-5 w-5" />
             </button>
@@ -74,7 +71,7 @@ export default function FAQSection() {
 
         {/* Category Filters */}
         <div className="mb-8 flex flex-wrap gap-3">
-          {faqCategories.map((category) => (
+          {categories.map((category) => (
             <button
               key={category}
               onClick={() => handleCategoryClick(category)}
@@ -115,8 +112,7 @@ export default function FAQSection() {
         ) : (
           <div className="text-center py-12">
             <p className="text-neutral-600 text-lg">
-              No FAQs found matching your search. Try different keywords or
-              browse by category.
+              {t("faq.noResults")}
             </p>
           </div>
         )}

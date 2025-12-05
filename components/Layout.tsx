@@ -1,8 +1,13 @@
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+"use client";
+
+import { Link } from "@/i18n/navigation";
+import { useTranslations } from "next-intl";
 import { Shield, Heart } from "lucide-react";
+import LanguageSelector from "@/components/LanguageSelector";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
+  const t = useTranslations();
+  
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header */}
@@ -14,12 +19,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <Heart className="h-6 w-6 text-primary-600" />
               </div>
               <span className="text-xl font-semibold text-neutral-900">
-                HIV Care Assistance
+                {t("common.appName")}
               </span>
             </Link>
-            <div className="flex items-center gap-2 text-sm text-neutral-600">
-              <Shield className="h-4 w-4" />
-              <span>Confidential & Private</span>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 text-sm text-neutral-600">
+                <Shield className="h-4 w-4" />
+                <span>{t("common.confidential")}</span>
+              </div>
+              <LanguageSelector />
             </div>
           </div>
         </div>
@@ -34,49 +42,32 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div>
               <h3 className="font-semibold text-neutral-900 mb-3">
-                Important Notice
+                {t("layout.importantNotice")}
               </h3>
               <p className="text-sm text-neutral-700 leading-relaxed">
-                This is an informational tool, not a replacement for medical
-                advice. Always consult with qualified healthcare professionals
-                for medical decisions.
+                {t("layout.importantNoticeText")}
               </p>
             </div>
             <div>
               <h3 className="font-semibold text-neutral-900 mb-3">
-                Emergency Resources
+                {t("layout.emergencyResources")}
               </h3>
               <p className="text-sm text-neutral-700 leading-relaxed mb-2">
-                In an emergency, call{" "}
-                <a
-                  href="tel:911"
-                  className="text-primary-600 hover:text-primary-700 underline"
-                >
-                  911
-                </a>{" "}
-                or go to the nearest hospital.
+                {t("layout.emergencyText", { phone: "911" })}
               </p>
               <p className="text-sm text-neutral-700">
-                For crisis support, call the{" "}
-                <a
-                  href="tel:988"
-                  className="text-primary-600 hover:text-primary-700 underline"
-                >
-                  988 Suicide & Crisis Lifeline
-                </a>
-                .
+                {t("layout.crisisText", { lifeline: "988 Suicide & Crisis Lifeline" })}
               </p>
             </div>
             <div>
-              <h3 className="font-semibold text-neutral-900 mb-3">Privacy</h3>
+              <h3 className="font-semibold text-neutral-900 mb-3">{t("layout.privacy")}</h3>
               <p className="text-sm text-neutral-700 leading-relaxed">
-                Your conversations are private and confidential. We are
-                committed to protecting your privacy and personal information.
+                {t("layout.privacyText")}
               </p>
             </div>
           </div>
           <div className="mt-8 pt-6 border-t border-neutral-300 text-center text-sm text-neutral-600">
-            <p>© {new Date().getFullYear()} HIV Care Assistance. All rights reserved.</p>
+            <p>{t("layout.copyright", { year: new Date().getFullYear() })}</p>
           </div>
         </div>
       </footer>
