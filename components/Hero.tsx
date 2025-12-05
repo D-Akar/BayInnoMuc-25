@@ -7,7 +7,7 @@ import { ArrowDown } from "lucide-react";
 
 export default function Hero() {
   const t = useTranslations();
-  
+
   return (
     <section className="relative py-20 md:py-28 bg-gradient-to-br from-primary-50 via-secondary-50 to-accent-50 overflow-hidden">
       {/* Decorative background elements */}
@@ -35,6 +35,19 @@ export default function Hero() {
                 {t("hero.getSupport")}
               </Button>
             </Link>
+          </div>
+          <div className="mt-8">
+            <p className="text-sm text-neutral-600 mb-2">
+              {t("hero.izarCenter")}
+            </p>
+            <a
+              href="https://mri.tum.de/de/Kliniken-und-Zentren/unsere-Zentren/HIV-Zentrum-IZAR"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary-600 hover:text-primary-700 underline font-medium"
+            >
+              {t("hero.izarCenterLink")}
+            </a>
           </div>
         </div>
 

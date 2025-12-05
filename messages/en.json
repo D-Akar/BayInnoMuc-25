@@ -9,7 +9,9 @@
         "subtitle": "Confidential, judgment-free assistance for HIV testing, treatment, prevention, and living well with HIV. You're not alone in this journey.",
         "browseFAQs": "Browse FAQs",
         "getSupport": "Get Support",
-        "learnMore": "Learn more"
+        "learnMore": "Learn more",
+        "izarCenter": "Also visit our",
+        "izarCenterLink": "Interdisciplinary HIV Centre IZAR"
     },
     "faq": {
         "title": "Frequently Asked Questions",
@@ -37,7 +39,7 @@
         "importantNoticeText": "This is an informational tool, not a replacement for medical advice. Always consult with qualified healthcare professionals for medical decisions.",
         "emergencyResources": "Emergency Resources",
         "emergencyText": "In an emergency, call {phone} or go to the nearest hospital.",
-        "crisisText": "For crisis support, call the {lifeline}.",
+        "crisisText": "For medical emergencies outside office hours: {lifeline}",
         "privacy": "Privacy",
         "privacyText": "Your conversations are private and confidential. We are committed to protecting your privacy and personal information.",
         "copyright": "© {year} HIV Care Assistance. All rights reserved."

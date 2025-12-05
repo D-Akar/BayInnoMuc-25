@@ -39,7 +39,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {/* Footer */}
       <footer className="bg-neutral-100 border-t border-neutral-200 mt-auto">
         <div className="container mx-auto px-4 py-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div>
               <h3 className="font-semibold text-neutral-900 mb-3">
                 {t("layout.importantNotice")}
@@ -53,10 +53,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 {t("layout.emergencyResources")}
               </h3>
               <p className="text-sm text-neutral-700 leading-relaxed mb-2">
-                {t("layout.emergencyText", { phone: "911" })}
+                {t("layout.emergencyText", { phone: "112" })}
               </p>
               <p className="text-sm text-neutral-700">
-                {t("layout.crisisText", { lifeline: "988 Suicide & Crisis Lifeline" })}
+                {t("layout.crisisText", { lifeline: "116 117 (Ärztlicher Bereitschaftsdienst)" })}
               </p>
             </div>
             <div>
@@ -64,6 +64,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <p className="text-sm text-neutral-700 leading-relaxed">
                 {t("layout.privacyText")}
               </p>
+            </div>
+            <div className="flex items-center justify-end">
+              <img 
+                src="/LOGO.svg" 
+                alt="TUM Universitätsklinikum rechts der Isar" 
+                className="h-24 w-auto object-contain"
+              />
             </div>
           </div>
           <div className="mt-8 pt-6 border-t border-neutral-300 text-center text-sm text-neutral-600">

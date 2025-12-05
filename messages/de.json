@@ -9,7 +9,9 @@
     "subtitle": "Vertrauliche, vorurteilsfreie Unterstützung bei HIV-Tests, Behandlung, Prävention und einem guten Leben mit HIV. Sie sind auf dieser Reise nicht allein.",
     "browseFAQs": "FAQs durchsuchen",
     "getSupport": "Unterstützung erhalten",
-    "learnMore": "Mehr erfahren"
+    "learnMore": "Mehr erfahren",
+    "izarCenter": "Besuchen Sie auch unser",
+    "izarCenterLink": "Interdisziplinäres HIV Zentrum IZAR"
   },
   "faq": {
     "title": "Häufig gestellte Fragen",
@@ -37,7 +39,7 @@
     "importantNoticeText": "Dies ist ein Informationswerkzeug und kein Ersatz für medizinische Beratung. Konsultieren Sie immer qualifizierte Gesundheitsfachkräfte für medizinische Entscheidungen.",
     "emergencyResources": "Notfallressourcen",
     "emergencyText": "Im Notfall rufen Sie {phone} an oder gehen Sie zum nächsten Krankenhaus.",
-    "crisisText": "Für Krisenunterstützung rufen Sie die {lifeline} an.",
+    "crisisText": "Für medizinische Notfälle außerhalb der Sprechzeiten: {lifeline}",
     "privacy": "Datenschutz",
     "privacyText": "Ihre Gespräche sind privat und vertraulich. Wir verpflichten uns, Ihre Privatsphäre und persönlichen Informationen zu schützen.",
     "copyright": "© {year} HIV-Betreuungshilfe. Alle Rechte vorbehalten."
