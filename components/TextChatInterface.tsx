@@ -29,7 +29,10 @@ export default function TextChatInterface() {
   const [isLoading, setIsLoading] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const isInitialMount = useRef(true);
+  const previousMessagesLength = useRef(1); // Start with 1 for the initial message
 
   // Initialize session
   useEffect(() => {
@@ -45,9 +48,21 @@ export default function TextChatInterface() {
     initSession();
   }, []);
 
-  // Auto-scroll to bottom when new messages arrive
+  // Ensure messages container starts at top on initial mount
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (isInitialMount.current && messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = 0;
+      isInitialMount.current = false;
+    }
+  }, []);
+
+  // Auto-scroll to bottom when new messages arrive (but not on initial mount)
+  useEffect(() => {
+    // Only scroll if a new message was added (messages.length increased)
+    if (messages.length > previousMessagesLength.current && messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+      previousMessagesLength.current = messages.length;
+    }
   }, [messages]);
 
   const handleSend = async () => {
@@ -134,7 +149,7 @@ export default function TextChatInterface() {
           {/* Chat Container */}
           <div className="bg-white rounded-2xl shadow-lg border border-neutral-200 flex flex-col h-[calc(100vh-12rem)]">
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+            <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-6 space-y-4">
               {messages.map((message) => (
                 <div
                   key={message.id}
