@@ -137,7 +137,7 @@ function ConnectionError() {
           </div>
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Connection Failed</h2>
           <p className="text-gray-600 mb-6">
-            We're having trouble connecting to the support assistant. Please try again.
+            We&apos;re having trouble connecting to the support assistant. Please try again.
           </p>
           <Link href="/">
             <Button className="bg-blue-900 hover:bg-blue-800 text-white">
@@ -344,7 +344,7 @@ function VoiceChatRoom({ onDisconnect }: { onDisconnect: () => void }) {
                 Ready to support you
               </h3>
               <p className="text-gray-600 mb-4 leading-relaxed">
-                Welcome to your confidential voice support session. I'm here to provide compassionate, 
+                Welcome to your confidential voice support session. I&apos;m here to provide compassionate, 
                 judgment-free assistance with HIV-related questions.
               </p>
               <div className="bg-blue-50 rounded-lg p-4 text-sm text-blue-800">

@@ -1,13 +1,16 @@
 import { AccessToken } from 'livekit-server-sdk';
 import { NextRequest, NextResponse } from 'next/server';
 
+// Force dynamic rendering since we use searchParams
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
-    const roomName = request.nextUrl.searchParams. get('room') || 'default-room';
-    const participantName = request. nextUrl.searchParams.get('username') || 'user-' + Math.random().toString(36). substring(7);
+    const roomName = request.nextUrl.searchParams.get('room') || 'default-room';
+    const participantName = request.nextUrl.searchParams.get('username') || 'user-' + Math.random().toString(36).substring(7);
 
     // Validate environment variables
-    if (! process.env. LIVEKIT_API_KEY || !process.env.LIVEKIT_API_SECRET) {
+    if (!process.env.LIVEKIT_API_KEY || !process.env.LIVEKIT_API_SECRET) {
       return NextResponse.json(
         { error: 'Server configuration error: Missing LiveKit credentials' },
         { status: 500 }
@@ -34,9 +37,9 @@ export async function GET(request: NextRequest) {
 
     const token = await at.toJwt();
     
-    return NextResponse. json({ 
+    return NextResponse.json({ 
       token,
-      url: process.env. LIVEKIT_URL 
+      url: process.env.LIVEKIT_URL 
     });
     
   } catch (error) {

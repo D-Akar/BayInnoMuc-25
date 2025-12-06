@@ -18,7 +18,7 @@ interface Message {
 }
 
 interface TextChatInterfaceProps {
-  locale: string;
+  locale?: string;
 }
 
 export default function TextChatInterface({ locale: localeProp }: TextChatInterfaceProps) {

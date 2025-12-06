@@ -6,6 +6,9 @@ import { searchFAQs } from "@/lib/backend/faqService";
 // TODO: Add result ranking and relevance scoring
 // TODO: Cache common search queries
 
+// Force dynamic rendering since we use searchParams
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
