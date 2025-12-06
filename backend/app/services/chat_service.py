@@ -26,7 +26,7 @@ AGENT_ID = azure_agent_id
 
 def call_llm_with_history(messages: List[Dict[str, str]]) -> str:
     """
-    Optimized: Reduced context window & Adaptive polling for lower latency.
+    Optimized: Reduced context window & Aggressive polling for lowest latency.
     """
     thread = None
     try:
@@ -40,17 +40,21 @@ def call_llm_with_history(messages: List[Dict[str, str]]) -> str:
         
         thread_id = run.thread_id
         
-        # 2. OPTIMIZATION: Adaptive Polling
-        # Check frequently at first (0.1s), then back off. 
-        # This catches short answers much faster.
+        # 2. OPTIMIZATION: Aggressive Polling for Speed
+        # Poll very frequently to catch completion ASAP
         poll_count = 0
         while run.status in ["queued", "in_progress", "requires_action"]:
-            # Sleep shorter for the first 2 seconds (20 checks), then 0.5s
-            sleep_time = 0.1 if poll_count < 20 else 0.5
+            # Ultra-fast polling: 0.05s for first 40 checks (2 seconds), then 0.2s
+            # This gives us 20 checks per second initially
+            sleep_time = 0.05 if poll_count < 40 else 0.2
             time.sleep(sleep_time)
             
             run = client.agents.runs.get(thread_id=thread_id, run_id=run.id)
             poll_count += 1
+            
+            # Safety: break after 2 minutes
+            if poll_count > 600:
+                raise Exception("Agent run timeout after 2 minutes")
             
         if run.status != "completed":
             raise Exception(f"Agent run failed with status: {run.status}")
@@ -105,10 +109,10 @@ def process_text_message(
     try:
         formatted_messages = []
         
-        # OPTIMIZATION: Limit history to last 6 messages
-        # Processing 6 messages is significantly faster than 10.
+        # OPTIMIZATION: Limit history to last 4 messages (2 exchanges)
+        # Fewer messages = faster processing by the agent
         if conversation_history:
-            for msg in conversation_history[-6:]:
+            for msg in conversation_history[-4:]:
                 role = msg.get("role")
                 content = msg.get("content")
                 if role in ["user", "assistant"] and content:
