@@ -30,12 +30,12 @@ export default function VoiceChatInterface() {
       try {
         const response = await fetch(`/api/token?room=${roomName}&username=patient-${Date.now()}`);
         
-        if (! response.ok) {
+        if (!response.ok) {
           throw new Error('Failed to get token');
         }
         
         const data = await response.json();
-        setToken(data. token);
+        setToken(data.token);
         setIsConnecting(false);
       } catch (error) {
         console.error('Failed to get token:', error);
@@ -55,7 +55,7 @@ export default function VoiceChatInterface() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-100 to-blue-50">
-      {/* Professional Header */}
+      {/* Professional Header - REMOVED End Conversation Button */}
       <div className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
@@ -77,16 +77,7 @@ export default function VoiceChatInterface() {
                 <Globe className="w-4 h-4" />
                 <span>English</span>
               </div>
-              <Link href="/">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="border-red-200 text-red-700 hover:bg-red-50 hover:border-red-300"
-                >
-                  <PhoneOff className="h-4 w-4 mr-2" />
-                  End Conversation
-                </Button>
-              </Link>
+              {/* REMOVED End Conversation Button from here */}
             </div>
           </div>
         </div>
@@ -149,7 +140,7 @@ function ConnectionError() {
           </div>
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Connection Failed</h2>
           <p className="text-gray-600 mb-6">
-            We're having trouble connecting to the support assistant. Please try again. 
+            We're having trouble connecting to the support assistant. Please try again.  
           </p>
           <Link href="/">
             <Button className="bg-blue-900 hover:bg-blue-800 text-white">
@@ -226,14 +217,14 @@ function VoiceChatRoom({ onDisconnect }: { onDisconnect: () => void }) {
       const participantIdentity = stream.participantInfo?.identity || "";
       const text = stream.text || "";
       const isFinal = stream.streamInfo?.attributes?.["lk. transcription_final"] === "true";
-      const segmentId = stream.streamInfo?. attributes?.["lk.segment_id"] || `${Date.now()}-${Math.random()}`;
+      const segmentId = stream.streamInfo?.attributes?.["lk.segment_id"] || `${Date.now()}-${Math.random()}`;
   
       if (! text. trim()) {
         return;
       }
   
       const isUser = participantIdentity.startsWith("patient") || 
-                     participantIdentity. startsWith("user") ||
+                     participantIdentity.startsWith("user") ||
                      participantIdentity.includes("patient");
       const role = isUser ? "user" : "assistant";
       
@@ -266,7 +257,7 @@ function VoiceChatRoom({ onDisconnect }: { onDisconnect: () => void }) {
 
   // Auto-scroll logic
   useEffect(() => {
-    if (transcriptions.length > 0 && ! isUserScrolling) {
+    if (transcriptions.length > 0 && !isUserScrolling) {
       const timer = setTimeout(() => {
         forceScrollToBottom();
       }, 100);
@@ -301,7 +292,7 @@ function VoiceChatRoom({ onDisconnect }: { onDisconnect: () => void }) {
 
   return (
     <div className="bg-white rounded-2xl shadow-xl border border-gray-200 flex flex-col h-[calc(100vh-12rem)]">
-      {/* Chat Header */}
+      {/* Chat Header - KEPT End Conversation Button Here */}
       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-t-2xl border-b border-gray-100">
         <div className="flex items-center justify-between">
           <div>
@@ -326,6 +317,7 @@ function VoiceChatRoom({ onDisconnect }: { onDisconnect: () => void }) {
               <Shield className="w-4 h-4" />
               <span>Confidential</span>
             </div>
+            {/* KEPT ONLY THIS End Conversation Button */}
             <Link href="/">
               <Button 
                 variant="outline" 
@@ -357,7 +349,7 @@ function VoiceChatRoom({ onDisconnect }: { onDisconnect: () => void }) {
               </h3>
               <p className="text-gray-600 mb-4 leading-relaxed">
                 Welcome to your confidential voice support session.  I'm here to provide compassionate, 
-                judgment-free assistance with HIV-related questions. 
+                judgment-free assistance with HIV-related questions.  
               </p>
               <div className="bg-blue-50 rounded-lg p-4 text-sm text-blue-800">
                 <p className="font-medium mb-1">You can ask me about:</p>
@@ -382,11 +374,11 @@ function VoiceChatRoom({ onDisconnect }: { onDisconnect: () => void }) {
           >
             <div
               className={`max-w-[80%] rounded-2xl px-5 py-4 shadow-sm ${
-                transcription. role === "user"
+                transcription.role === "user"
                   ? "bg-blue-900 text-white"
                   : "bg-gray-50 text-gray-900 border border-gray-200"
               } ${
-                ! transcription.isFinal ?  'ring-2 ring-blue-200' : ''
+                ! transcription.isFinal ? 'ring-2 ring-blue-200' : ''
               }`}
             >
               <p className="text-base leading-relaxed mb-2">
@@ -396,7 +388,7 @@ function VoiceChatRoom({ onDisconnect }: { onDisconnect: () => void }) {
                 <span className={`text-xs ${
                   transcription.role === "user" ? "text-blue-100" : "text-gray-500"
                 }`}>
-                  {transcription. timestamp.toLocaleTimeString([], {
+                  {transcription.timestamp.toLocaleTimeString([], {
                     hour: "2-digit",
                     minute: "2-digit",
                   })}

@@ -1,156 +1,249 @@
 """
-HIV Knowledge Assistant
-Features:
-- Knowledge base created from HIV guideline PDFs (via ChromaDB)
-- Queries answered using context retrieval + Nebius LLM (RAG)
-- Speech-to-Text (Deepgram) and Text-to-Speech (ElevenLabs or other TTS)
+HIV Knowledge Assistant - Using AgentSession API
 """
 
 import os
 import logging
-import requests
 from pathlib import Path
 from dotenv import load_dotenv
-from chromadb import PersistentClient
-from livekit.agents import Agent, AgentSession, JobContext, WorkerOptions, cli
+from livekit.agents import (
+    Agent,
+    AgentSession,
+    JobContext,
+    WorkerOptions,
+    cli,
+)
 from livekit.plugins import deepgram, elevenlabs, silero, openai
 
-# Load environment variables from `.env` file
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+)
+logger = logging.getLogger("HIVAssistant")
+
+# Load environment variables
 env_path = Path(__file__).parent / ".env"
 load_dotenv(env_path, override=True)
 
-# Verify environment variables
+# Get API keys
 NEBIUS_API_KEY = os.getenv("NEBIUS_API_KEY")
 DEEPGRAM_API_KEY = os.getenv("DEEPGRAM_API_KEY")
 ELEVEN_API_KEY = os.getenv("ELEVEN_API_KEY")
 
 if not all([NEBIUS_API_KEY, DEEPGRAM_API_KEY, ELEVEN_API_KEY]):
-    raise ValueError("Missing one or more required API keys. Check your .env file.")
+    raise ValueError("Missing required API keys in .env file")
 
-# Persistent ChromaDB configuration
-PERSIST_DIRECTORY = "./database"
-chroma_client = PersistentClient(path=PERSIST_DIRECTORY)
-collection = chroma_client.get_or_create_collection(name="rag-knowledge-base")
+# Global variables - will be initialized lazily
+_collection = None
+_model = None
 
-# Configure logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
-logger = logging.getLogger("HIVKnowledgeAssistant")
+def get_collection():
+    """Lazy load ChromaDB collection."""
+    global _collection, _model
+    
+    if _collection is not None:
+        return _collection
+    
+    logger.info("Initializing ChromaDB and SentenceTransformer...")
+    
+    from chromadb import PersistentClient
+    from sentence_transformers import SentenceTransformer
+    
+    # Load model
+    _model = SentenceTransformer("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2")
+    
+    # Embedding function
+    class EmbeddingFunction:
+        def __init__(self, model):
+            self.model = model
 
-# Minimal prewarm model setup
-def prewarm(job_process):
-    logger.info("Prewarming models (VAD)...")
-    job_process.userdata["vad"] = silero.VAD.load()
-    logger.info("VAD ready for use.")
+        def __call__(self, input):
+            if not isinstance(input, list):
+                raise ValueError("Expected input to be a list")
+            return self.model.encode(input, show_progress_bar=False).tolist()
+        
+        def embed_documents(self, texts):
+            return self.model.encode(texts, show_progress_bar=False).tolist()
+        
+        def embed_query(self, **kwargs):
+            query_text = kwargs.get('input') or kwargs.get('text') or kwargs.get('query')
+            if query_text is None:
+                raise ValueError("No query text provided")
+            if isinstance(query_text, list):
+                query_text = query_text[0] if query_text else ""
+            embedding = self.model.encode([str(query_text)], show_progress_bar=False)
+            return embedding.tolist()
+
+        def name(self):
+            return "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+    
+    # Initialize ChromaDB
+    PERSIST_DIRECTORY = "./hybrid_database"
+    chroma_client = PersistentClient(path=PERSIST_DIRECTORY)
+    embedding_fn = EmbeddingFunction(_model)
+    _collection = chroma_client.get_or_create_collection(
+        name="hybrid-rag-knowledge-base",
+        embedding_function=embedding_fn
+    )
+    
+    logger.info(f"ChromaDB ready with {_collection.count()} documents")
+    return _collection
+
+def generate_sub_queries(query: str) -> list:
+    """Generate multiple queries for better retrieval."""
+    queries = [query]
+    query_lower = query.lower()
+    
+    if any(w in query_lower for w in ['münchen', 'munich', 'wo kann', 'tum', 'izar', 'checkpoint']):
+        queries.extend([
+            "HIV Zentrum München",
+            "TUM HIV Klinik IZAR",
+            "Checkpoint München"
+        ])
+    
+    if any(w in query_lower for w in ['termin', 'appointment', 'kontakt', 'contact', 'telefon', 'phone']):
+        queries.extend([
+            "HIV Klinik Kontakt",
+            "IZAR Telefon Sprechstunden"
+        ])
+    
+    return list(set(queries))
+
+def retrieve_context(query: str, n_results: int = 8) -> str:
+    """Retrieve context from ChromaDB."""
+    collection = get_collection()
+    
+    sub_queries = generate_sub_queries(query)
+    logger.info(f"Searching with {len(sub_queries)} queries")
+    
+    all_docs = []
+    all_metadatas = []
+    seen_ids = set()
+    
+    for sub_query in sub_queries:
+        try:
+            results = collection.query(query_texts=[sub_query], n_results=n_results)
+            
+            if results["documents"] and results["documents"][0]:
+                for doc, metadata in zip(results["documents"][0], results["metadatas"][0]):
+                    doc_id = f"{metadata.get('source', '')}_{metadata.get('chunk_index', 0)}"
+                    
+                    if doc_id not in seen_ids:
+                        seen_ids.add(doc_id)
+                        all_docs.append(doc)
+                        all_metadatas.append(metadata)
+        except Exception as e:
+            logger.error(f"Query error: {e}")
+    
+    if not all_docs:
+        return None
+    
+    # Format context
+    context_parts = []
+    for i, (doc, meta) in enumerate(list(zip(all_docs, all_metadatas))[:8]):
+        title = meta.get('title', 'Unknown')
+        source_type = meta.get('source_type', 'unknown').upper()
+        context_parts.append(f"[{source_type}: {title}]\n{doc}")
+    
+    logger.info(f"Retrieved {len(context_parts)} results")
+    return "\n\n".join(context_parts)
 
 class HIVAssistant(Agent):
-    """HIV Knowledge Assistant with ChromaDB and Nebius LLM."""
-    def __init__(self, llm_model):
-        super().__init__(instructions="""
-        You are an intelligent HIV guideline assistant dedicated to providing precise, clear, and concise information based on the uploaded HIV guideline documents and recommendations.
+    """HIV Knowledge Assistant using AgentSession."""
+    
+    def __init__(self):
+        super().__init__(
+            instructions="""You are an intelligent HIV knowledge assistant for Munich, Germany.
 
-**Your Capabilities**:
-- You answer user queries about HIV prevention, diagnosis, and treatment by extracting information from the database of guidelines.
-- Your responses are conversational, professional, and easy to understand. Keep answers succinct and free of unnecessary complexity.
-- You rely strictly on the provided context to formulate answers. If no context is available to address the query, inform the user politely that the knowledge base does not include relevant information.
-- You understand and respond in the user’s language. If a query is in a different language, reply in that language to maintain ease of communication.
+Your role:
+- Answer questions about HIV prevention, diagnosis, treatment, and testing
+- Provide information about HIV clinics and services in Munich
+- Give clear, concise, and compassionate responses
+- Respond in the user's language (German or English)
 
-**Response Guidelines**:
-1. Focus on giving **practical, concise, and actionable information**.
-2. Avoid lengthy explanations unless absolutely necessary. Aim for 1–2 short sentences.
-3. Maintain a **warm and supportive tone**, suitable for sensitive health-related topics.
-4. Clearly acknowledge when the knowledge base lacks information.
+Response guidelines:
+- Keep answers brief (2-3 sentences) unless more detail is requested
+- Include specific details like addresses and phone numbers when available in the context
+- If you don't have information, say so politely
+- Maintain a warm, supportive tone
 
-**Examples**:
-- User: "What are the latest HIV prevention guidelines?"
-  Assistant: "The latest guidelines recommend pre-exposure prophylaxis (PrEP) for high-risk groups. Let me know if you'd like more details!"
-  
-- User: "What treatments are available for managing HIV?"  
-  Assistant: "Antiretroviral therapy (ART) is the standard treatment for managing HIV. It helps maintain viral suppression and immune health."
-
-- User: "Welche vorbeugenden Maßnahmen gibt es bei HIV?"  
-  Assistant: "Die Leitlinien empfehlen Präexpositionsprophylaxe (PrEP) und regelmäßige HIV-Tests für Risikogruppen."
-  
-- User: "Can HIV be cured?"  
-  Assistant: "Currently, there is no cure for HIV, but treatments like ART can achieve long-term viral suppression."
-
-- User: "Tell me about HIV diagnosis."  
-  Assistant: "HIV diagnosis involves antibody/antigen testing with confirmatory testing if needed."
-        """)
-        self.llm_model = llm_model
-
-    def fetch_context_from_chromadb(self, query):
-        """Retrieve context from ChromaDB."""
-        try:
-            results = collection.query(query_texts=[query], n_results=3)
-            if not results["documents"]:
-                logger.warning(f"No matches for query: '{query}'")
-                return None
-            context = "\n\n".join([f"(Doc {i+1}) {result}" for i, result in enumerate(results["documents"])])
-            logger.info(f"Retrieved context: {context}")
-            return context
-        except Exception as e:
-            logger.error(f"Error querying ChromaDB: {e}")
-            return None
-
+When you receive context from the knowledge base, use it to provide accurate, specific information."""
+        )
+    
     async def on_user_text(self, msg):
-        """Process user queries."""
+        """Handle user text messages with RAG."""
         user_query = msg.content.strip()
-        logger.info(f"User Query: '{user_query}'")
-
+        logger.info(f"💬 User query: '{user_query}'")
+        
         try:
-            # Step 1: Fetch context from ChromaDB
-            context = self.fetch_context_from_chromadb(user_query)
-            if not context:
-                fallback_response = "I'm sorry, I couldn't find relevant information."
-                await self.reply(fallback_response)
-                logger.info("Fallback response sent: No data found in the knowledge base.")
-                return
+            # Retrieve context from knowledge base
+            context = retrieve_context(user_query, n_results=8)
+            
+            if context:
+                logger.info("✅ Context retrieved from knowledge base")
+                # Create enhanced prompt with context
+                enhanced_prompt = f"""CONTEXT from HIV knowledge base:
 
-            # Step 2: Generate response using Nebius LLM
-            response = await self._generate_llm_response(context, user_query)
-            await self.reply(response)
+{context}
+
+USER QUESTION: {user_query}
+
+Please answer the user's question using the context above. Include specific details like addresses, phone numbers, and opening hours if they are mentioned in the context. Respond in the same language as the user's question."""
+                
+                # Reply using the LLM with context
+                await self.reply(enhanced_prompt)
+            else:
+                logger.warning("⚠️ No context found")
+                await self.reply(f"USER QUESTION: {user_query}\n\nI couldn't find specific information about this in my knowledge base. I'll provide a general response if possible.")
+                
         except Exception as e:
             logger.error(f"Error handling query: {e}")
-            await self.reply("An internal error occurred. Please try again.")
+            await self.reply("I encountered an error processing your question. Please try again.")
 
-    async def _generate_llm_response(self, context, query):
-        """Generate a response from Nebius LLM using provided context."""
-        try:
-            logger.info("Generating response via Nebius API...")
-            prompt = f"CONTEXT: {context}\n\nQUERY: {query}"
-            return await self.llm_model.completion(prompt=prompt, max_tokens=300)
-        except Exception as e:
-            logger.error(f"Error generating response: {e}")
-            return "Sorry, I couldn't process your query at this time."
+def prewarm(proc: JobContext):
+    """Prewarm function - minimal setup."""
+    logger.info("Prewarming VAD...")
+    proc.userdata["vad"] = silero.VAD.load()
+    logger.info("VAD ready")
 
 async def entrypoint(ctx: JobContext):
-    """Main entrypoint: Initiate and configure the assistant."""
-    logger.info("HIV Knowledge Assistant Starting 🚀")
-
-    # Nebius LLM configuration
-    llm_model = openai.LLM(
+    """Main entrypoint using AgentSession."""
+    
+    logger.info("🚀 Starting HIV Knowledge Assistant...")
+    
+    # Configure Nebius LLM
+    nebius_llm = openai.LLM(
         base_url="https://api.tokenfactory.nebius.com/v1/",
         api_key=NEBIUS_API_KEY,
         model="meta-llama/Llama-3.3-70B-Instruct",
         temperature=0.7,
     )
-
-    # Configure and start the session
+    
+    # Create AgentSession
     session = AgentSession(
-        stt=deepgram.STT(api_key=DEEPGRAM_API_KEY, model="nova-2-general"),  # Deepgram STT
-        tts=elevenlabs.TTS(api_key=ELEVEN_API_KEY, model="eleven_turbo_v2_5", voice_id="21m00Tcm4TlvDq8ikWAM"),  # ElevenLabs TTS
-        llm=llm_model,  # Nebius LLM for response generation
-        vad=silero.VAD.load(
-            min_speech_duration=0.3,
-            min_silence_duration=0.6,
-            padding_duration=0.2,
-            activation_threshold=0.5,
-        )
+        stt=deepgram.STT(api_key=DEEPGRAM_API_KEY, model="nova-2-general"),
+        tts=elevenlabs.TTS(
+            api_key=ELEVEN_API_KEY,
+            model="eleven_turbo_v2_5",
+            voice_id="21m00Tcm4TlvDq8ikWAM"
+        ),
+        llm=nebius_llm,
+        vad=ctx.proc.userdata["vad"],
     )
-
-    # Start the voice assistant
-    assistant = HIVAssistant(llm_model=llm_model)
+    
+    # Create assistant instance
+    assistant = HIVAssistant()
+    
+    # Start the session
     await session.start(room=ctx.room, agent=assistant)
+    
+    logger.info("✅ Assistant started successfully!")
 
 if __name__ == "__main__":
-    cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint, prewarm_fnc=prewarm))
+    cli.run_app(
+        WorkerOptions(
+            entrypoint_fnc=entrypoint,
+            prewarm_fnc=prewarm,
+        )
+    )
