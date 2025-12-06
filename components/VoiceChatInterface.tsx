@@ -21,10 +21,9 @@ interface Transcription {
 
 export default function VoiceChatInterface() {
   const [token, setToken] = useState('');
-  const [isConnecting, setIsConnecting] = useState(true); // Start connecting immediately
+  const [isConnecting, setIsConnecting] = useState(true);
   const [roomName] = useState('hiv-assistant-' + Math.random().toString(36).substring(7));
 
-  // Auto-connect when component mounts
   useEffect(() => {
     const connectToRoom = async () => {
       try {
@@ -55,7 +54,6 @@ export default function VoiceChatInterface() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-100 to-blue-50">
-      {/* Professional Header - REMOVED End Conversation Button */}
       <div className="bg-white/90 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
@@ -77,7 +75,6 @@ export default function VoiceChatInterface() {
                 <Globe className="w-4 h-4" />
                 <span>English</span>
               </div>
-              {/* REMOVED End Conversation Button from here */}
             </div>
           </div>
         </div>
@@ -86,7 +83,7 @@ export default function VoiceChatInterface() {
       <div className="max-w-5xl mx-auto px-4 py-6">
         {isConnecting ? (
           <ConnectingInterface />
-        ) : ! token ? (
+        ) : !token ? (
           <ConnectionError />
         ) : (
           <LiveKitRoom
@@ -140,7 +137,7 @@ function ConnectionError() {
           </div>
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Connection Failed</h2>
           <p className="text-gray-600 mb-6">
-            We're having trouble connecting to the support assistant. Please try again.  
+            We're having trouble connecting to the support assistant. Please try again.
           </p>
           <Link href="/">
             <Button className="bg-blue-900 hover:bg-blue-800 text-white">
@@ -158,68 +155,78 @@ function VoiceChatRoom({ onDisconnect }: { onDisconnect: () => void }) {
   const [transcriptions, setTranscriptions] = useState<Transcription[]>([]);
   const [volume, setVolume] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
-  const [isUserScrolling, setIsUserScrolling] = useState(false);
-  const [showScrollToBottom, setShowScrollToBottom] = useState(false);
+  const [autoScroll, setAutoScroll] = useState(true); // FIXED: Simplified state
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const isScrollingProgrammatically = useRef(false); // FIXED: Track programmatic scrolls
 
-  // Get transcription streams from LiveKit
   const transcriptionStreams = useTranscriptions();
 
-  // Debug transcription streams
-  useEffect(() => {
-    console.log('🔍 Transcription Debug:', {
-      streamsCount: transcriptionStreams?. length || 0,
-      transcriptionsCount: transcriptions.length,
-      state: state,
-      streams: transcriptionStreams
-    });
-  }, [transcriptionStreams, transcriptions, state]);
-
   // Force scroll to bottom function
-  const forceScrollToBottom = useCallback(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current. scrollIntoView({ behavior: 'smooth', block: 'end' });
-      setIsUserScrolling(false);
-      setShowScrollToBottom(false);
+  const scrollToBottom = useCallback(() => {
+    if (messagesEndRef.current && messagesContainerRef.current) {
+      isScrollingProgrammatically.current = true;
+      
+      // Use scrollIntoView for reliable scrolling
+      messagesEndRef.current.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'end',
+        inline: 'nearest'
+      });
+      
+      setAutoScroll(true);
+      
+      // Reset flag after animation completes
+      setTimeout(() => {
+        isScrollingProgrammatically.current = false;
+      }, 500);
     }
   }, []);
 
-  // Check scroll position
-  const checkScrollPosition = useCallback(() => {
-    if (messagesContainerRef.current && transcriptions.length > 0) {
-      const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
-      const isAtBottom = Math.abs(scrollHeight - scrollTop - clientHeight) < 50;
-      
-      if (! isAtBottom) {
-        setIsUserScrolling(true);
-        setShowScrollToBottom(true);
-      } else {
-        setIsUserScrolling(false);
-        setShowScrollToBottom(false);
-      }
-    }
-  }, [transcriptions.length]);
-
-  // Handle scroll events
+  // FIXED: Better scroll position detection
   const handleScroll = useCallback(() => {
-    checkScrollPosition();
-  }, [checkScrollPosition]);
+    // Ignore scroll events triggered by our own scrollToBottom function
+    if (isScrollingProgrammatically.current) {
+      return;
+    }
+
+    if (messagesContainerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+      
+      // Check if user is at bottom (with 100px threshold for safety)
+      const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+      const isAtBottom = distanceFromBottom < 100;
+      
+      setAutoScroll(isAtBottom);
+    }
+  }, []);
+
+  // FIXED: Auto-scroll when new messages arrive
+  useEffect(() => {
+    if (transcriptions.length > 0 && autoScroll) {
+      // Small delay to ensure DOM has updated
+      const timer = setTimeout(() => {
+        scrollToBottom();
+      }, 50);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [transcriptions, autoScroll, scrollToBottom]);
 
   // Process transcription streams
   useEffect(() => {
-    if (! transcriptionStreams || transcriptionStreams.length === 0) {
+    if (!transcriptionStreams || transcriptionStreams.length === 0) {
       return;
     }
     
     transcriptionStreams.forEach((stream: any) => {
       const participantIdentity = stream.participantInfo?.identity || "";
       const text = stream.text || "";
-      const isFinal = stream.streamInfo?.attributes?.["lk. transcription_final"] === "true";
+      const isFinal = stream.streamInfo?.attributes?.["lk.transcription_final"] === "true";
       const segmentId = stream.streamInfo?.attributes?.["lk.segment_id"] || `${Date.now()}-${Math.random()}`;
   
-      if (! text. trim()) {
+      if (!text.trim()) {
         return;
       }
   
@@ -255,17 +262,6 @@ function VoiceChatRoom({ onDisconnect }: { onDisconnect: () => void }) {
     });
   }, [transcriptionStreams]);
 
-  // Auto-scroll logic
-  useEffect(() => {
-    if (transcriptions.length > 0 && !isUserScrolling) {
-      const timer = setTimeout(() => {
-        forceScrollToBottom();
-      }, 100);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [transcriptions, isUserScrolling, forceScrollToBottom]);
-
   // Simulate volume for visualization
   useEffect(() => {
     let animationFrame: number;
@@ -291,8 +287,8 @@ function VoiceChatRoom({ onDisconnect }: { onDisconnect: () => void }) {
   const isProcessing = state === 'thinking';
 
   return (
-    <div className="bg-white rounded-2xl shadow-xl border border-gray-200 flex flex-col h-[calc(100vh-12rem)]">
-      {/* Chat Header - KEPT End Conversation Button Here */}
+    <div className="bg-white rounded-2xl shadow-xl border border-gray-200 flex flex-col h-[calc(100vh-12rem)] relative">
+      {/* Chat Header */}
       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-t-2xl border-b border-gray-100">
         <div className="flex items-center justify-between">
           <div>
@@ -317,7 +313,6 @@ function VoiceChatRoom({ onDisconnect }: { onDisconnect: () => void }) {
               <Shield className="w-4 h-4" />
               <span>Confidential</span>
             </div>
-            {/* KEPT ONLY THIS End Conversation Button */}
             <Link href="/">
               <Button 
                 variant="outline" 
@@ -332,11 +327,12 @@ function VoiceChatRoom({ onDisconnect }: { onDisconnect: () => void }) {
         </div>
       </div>
 
-      {/* Messages Area */}
+      {/* Messages Area - FIXED: Better overflow handling */}
       <div 
         ref={messagesContainerRef}
         onScroll={handleScroll}
-        className="flex-1 overflow-y-auto p-6 space-y-6"
+        className="flex-1 overflow-y-auto overflow-x-hidden p-6 space-y-6 scroll-smooth"
+        style={{ scrollBehavior: 'smooth' }} // FIXED: Ensure smooth scrolling
       >
         {transcriptions.length === 0 && (
           <div className="flex items-center justify-center h-full min-h-[400px]">
@@ -348,8 +344,8 @@ function VoiceChatRoom({ onDisconnect }: { onDisconnect: () => void }) {
                 Ready to support you
               </h3>
               <p className="text-gray-600 mb-4 leading-relaxed">
-                Welcome to your confidential voice support session.  I'm here to provide compassionate, 
-                judgment-free assistance with HIV-related questions.  
+                Welcome to your confidential voice support session. I'm here to provide compassionate, 
+                judgment-free assistance with HIV-related questions.
               </p>
               <div className="bg-blue-50 rounded-lg p-4 text-sm text-blue-800">
                 <p className="font-medium mb-1">You can ask me about:</p>
@@ -378,10 +374,10 @@ function VoiceChatRoom({ onDisconnect }: { onDisconnect: () => void }) {
                   ? "bg-blue-900 text-white"
                   : "bg-gray-50 text-gray-900 border border-gray-200"
               } ${
-                ! transcription.isFinal ? 'ring-2 ring-blue-200' : ''
+                !transcription.isFinal ? 'ring-2 ring-blue-200' : ''
               }`}
             >
-              <p className="text-base leading-relaxed mb-2">
+              <p className="text-base leading-relaxed mb-2 whitespace-pre-wrap break-words">
                 {transcription.text}
               </p>
               <div className="flex items-center justify-between">
@@ -394,7 +390,7 @@ function VoiceChatRoom({ onDisconnect }: { onDisconnect: () => void }) {
                   })}
                 </span>
                 <div className="flex items-center gap-2">
-                  {! transcription.isFinal && (
+                  {!transcription.isFinal && (
                     <span className={`text-xs px-2 py-1 rounded-full ${
                       transcription.role === "user" 
                         ? "bg-blue-700/30 text-blue-100" 
@@ -425,14 +421,16 @@ function VoiceChatRoom({ onDisconnect }: { onDisconnect: () => void }) {
           </div>
         )}
         
-        <div ref={messagesEndRef} />
+        {/* FIXED: Anchor element for scrolling */}
+        <div ref={messagesEndRef} style={{ height: '1px' }} />
       </div>
 
-      {/* Scroll to Bottom Button */}
-      {showScrollToBottom && (
+      {/* FIXED: Scroll to Bottom Button - Only show when not at bottom */}
+      {!autoScroll && transcriptions.length > 0 && (
         <button
-          onClick={forceScrollToBottom}
-          className="absolute bottom-32 right-6 bg-blue-900 hover:bg-blue-800 text-white p-3 rounded-full shadow-lg z-10 transition-all"
+          onClick={scrollToBottom}
+          className="absolute bottom-32 right-6 bg-blue-900 hover:bg-blue-800 text-white p-3 rounded-full shadow-lg z-20 transition-all transform hover:scale-110 animate-bounce"
+          aria-label="Scroll to bottom"
         >
           <ChevronDown className="h-5 w-5" />
         </button>
